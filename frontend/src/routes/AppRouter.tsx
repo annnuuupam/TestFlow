@@ -18,6 +18,8 @@ import AdminQuestions from '@/pages/admin/Questions'
 import AdminUsers from '@/pages/admin/Users'
 import AdminResults from '@/pages/admin/Results'
 import AdminAnnouncements from '@/pages/admin/Announcements'
+import ManageProblems from '@/pages/admin/ManageProblems'
+import ProblemEditor from '@/pages/admin/ProblemEditor'
 
 // Student pages
 import StudentDashboard from '@/pages/student/Dashboard'
@@ -25,6 +27,8 @@ import StudentTestList from '@/pages/student/TestList'
 import StudentTestAttempt from '@/pages/student/TestAttempt'
 import StudentResults from '@/pages/student/Results'
 import StudentLeaderboard from '@/pages/student/Leaderboard'
+import ProblemList from '@/pages/student/ProblemList'
+import ProblemSolving from '@/pages/student/ProblemSolving'
 
 function RequireAuth({ children, role }: { children: React.ReactNode; role?: 'ADMIN' | 'STUDENT' }) {
   const { isAuthenticated, role: userRole } = useAuthStore()
@@ -54,6 +58,8 @@ export default function AppRouter() {
         <Route path="/admin/users"         element={<AdminUsers />} />
         <Route path="/admin/results"       element={<AdminResults />} />
         <Route path="/admin/announcements" element={<AdminAnnouncements />} />
+        <Route path="/admin/problems"      element={<ManageProblems />} />
+        <Route path="/admin/problems/create" element={<ProblemEditor />} />
       </Route>
 
       {/* Student routes */}
@@ -63,6 +69,8 @@ export default function AppRouter() {
         <Route path="/student/tests/:id/attempt"  element={<StudentTestAttempt />} />
         <Route path="/student/results"            element={<StudentResults />} />
         <Route path="/student/leaderboard/:examId" element={<StudentLeaderboard />} />
+        <Route path="/student/problems"           element={<ProblemList />} />
+        <Route path="/student/problems/:id"       element={<ProblemSolving />} />
       </Route>
 
       {/* Default redirect */}

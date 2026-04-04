@@ -4,6 +4,7 @@ import com.ots.dto.request.ExamRequest;
 import com.ots.dto.response.ExamResponse;
 import com.ots.dto.response.SectionResponse;
 import com.ots.dto.response.QuestionResponse;
+import com.ots.dto.response.TestCaseResponse;
 import com.ots.entity.*;
 import com.ots.enums.TestStatus;
 import com.ots.exception.BadRequestException;
@@ -17,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.time.LocalDateTime;
 import java.util.stream.Collectors;
 
 @Service
@@ -41,9 +43,28 @@ public class ExamService {
     }
 
     public List<ExamResponse> getActiveExams() {
-        return examRepository.findByStatus(TestStatus.ACTIVE).stream()
+        return examRepository.findCurrentlyActiveExams(LocalDateTime.now()).stream()
                 .map(exam -> mapToResponse(exam, false))
                 .collect(Collectors.toList());
+    }
+
+    public ExamResponse getExamForStudent(Long id) {
+        Exam exam = examRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Exam", id));
+
+        if (exam.getStatus() != TestStatus.ACTIVE) {
+            throw new BadRequestException("Exam is not active");
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        if (exam.getStartTime() != null && exam.getStartTime().isAfter(now)) {
+            throw new BadRequestException("Exam has not started yet");
+        }
+        if (exam.getEndTime() != null && exam.getEndTime().isBefore(now)) {
+            throw new BadRequestException("Exam has already ended");
+        }
+
+        return mapToResponse(exam, true);
     }
 
     @Transactional
@@ -119,12 +140,13 @@ public class ExamService {
         List<SectionResponse> sections = new ArrayList<>();
         int totalQuestions = 0;
 
-        if (includeSections) {
-            List<Section> sectionList = sectionRepository.findByExamIdOrderByDisplayOrder(exam.getId());
-            for (Section section : sectionList) {
-                List<Question> questions = questionRepository.findBySectionIdOrderByDisplayOrder(section.getId());
-                totalQuestions += questions.size();
+        // Always compute totalQuestions (even when not including section details)
+        List<Section> sectionList = sectionRepository.findByExamIdOrderByDisplayOrder(exam.getId());
+        for (Section section : sectionList) {
+            List<Question> questions = questionRepository.findBySectionIdOrderByDisplayOrder(section.getId());
+            totalQuestions += questions.size();
 
+            if (includeSections) {
                 List<QuestionResponse> questionResponses = questions.stream()
                         .map(q -> mapQuestionToResponse(q, false))
                         .collect(Collectors.toList());
@@ -158,7 +180,7 @@ public class ExamService {
                 .createdBy(exam.getCreatedBy() != null ? exam.getCreatedBy().getUsername() : null)
                 .createdAt(exam.getCreatedAt())
                 .totalQuestions(totalQuestions)
-                .sectionCount(sections.size())
+                .sectionCount(sectionList.size())
                 .attemptCount(attemptCount)
                 .sections(includeSections ? sections : null)
                 .build();
@@ -183,6 +205,19 @@ public class ExamService {
                 .displayOrder(q.getDisplayOrder())
                 .options(options)
                 .explanation(includeAnswers ? q.getExplanation() : null)
+                .boilerplate(q.getBoilerplate())
+                .constraints(q.getConstraints())
+                .sampleInput(q.getSampleInput())
+                .sampleOutput(q.getSampleOutput())
+                .testCases(q.getTestCases().stream()
+                        .filter(tc -> includeAnswers || !tc.getIsHidden()) // Show hidden only to admin/result view
+                        .map(tc -> TestCaseResponse.builder()
+                                .id(tc.getId())
+                                .input(tc.getInput())
+                                .expectedOutput(tc.getExpectedOutput())
+                                .isHidden(tc.getIsHidden())
+                                .build())
+                        .collect(Collectors.toList()))
                 .build();
     }
 }

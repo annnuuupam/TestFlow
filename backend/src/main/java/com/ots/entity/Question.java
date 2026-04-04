@@ -39,6 +39,19 @@ public class Question {
     @Column(columnDefinition = "TEXT")
     private String explanation;
 
+    // Coding question specific fields
+    @Column(columnDefinition = "TEXT")
+    private String boilerplate;
+
+    @Column(columnDefinition = "TEXT")
+    private String constraints;
+
+    @Column(name = "sample_input", columnDefinition = "TEXT")
+    private String sampleInput;
+
+    @Column(name = "sample_output", columnDefinition = "TEXT")
+    private String sampleOutput;
+
     @Column(length = 10)
     @Builder.Default
     private String difficulty = "MEDIUM";
@@ -50,4 +63,8 @@ public class Question {
     @OneToMany(mappedBy = "question", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<Option> options = new ArrayList<>();
+
+    @OneToMany(mappedBy = "question", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<TestCase> testCases = new ArrayList<>();
 }

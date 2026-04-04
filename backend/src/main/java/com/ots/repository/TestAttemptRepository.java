@@ -17,6 +17,7 @@ public interface TestAttemptRepository extends JpaRepository<TestAttempt, Long> 
     List<TestAttempt> findByUserIdOrderByStartTimeDesc(Long userId);
     List<TestAttempt> findByExamIdOrderByScoreDesc(Long examId);
     Optional<TestAttempt> findByExamIdAndUserIdAndStatus(Long examId, Long userId, AttemptStatus status);
+    List<TestAttempt> findAllByExamIdAndUserIdAndStatus(Long examId, Long userId, AttemptStatus status);
     long countByUserId(Long userId);
     long countByStatus(AttemptStatus status);
     long countByExamId(Long examId);

@@ -1,5 +1,6 @@
 package com.ots.controller;
 
+import com.ots.dto.request.AnnouncementRequest;
 import com.ots.dto.response.AnnouncementResponse;
 import com.ots.service.AnnouncementService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -15,7 +16,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/announcements")
@@ -43,11 +44,11 @@ public class AnnouncementController {
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Create a new announcement")
-    public ResponseEntity<AnnouncementResponse> create(@RequestBody Map<String, String> body,
+    public ResponseEntity<AnnouncementResponse> create(@Valid @RequestBody AnnouncementRequest body,
                                                         @AuthenticationPrincipal UserDetails userDetails) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(announcementService.createAnnouncement(
-                        body.get("title"), body.get("content"), userDetails.getUsername()));
+                        body.getTitle(), body.getContent(), userDetails.getUsername()));
     }
 
     @PutMapping("/{id}/toggle")

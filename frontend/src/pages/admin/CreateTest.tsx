@@ -1,10 +1,11 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import toast from 'react-hot-toast'
 import { testApi } from '@/api/test.api'
 import { adminApi } from '@/api/admin.api'
-import { PlusCircle, Trash2, ChevronRight, Loader2, ArrowLeft } from 'lucide-react'
+import { PlusCircle, Trash2, ChevronRight, Loader2, ArrowLeft, Save } from 'lucide-react'
+import CodeRunnerPanel from '@/components/CodeRunnerPanel'
 
 interface SectionForm { title: string; sectionType: string; marksPerQuestion: number }
 
@@ -14,6 +15,11 @@ interface QuestionForm {
   marks: number
   difficulty: string
   options: { optionText: string; isCorrect: boolean }[]
+  boilerplate?: string
+  constraints?: string
+  sampleInput?: string
+  sampleOutput?: string
+  testCases?: { input: string; expectedOutput: string; isHidden: boolean }[]
 }
 
 export default function AdminCreateTest() {
@@ -25,7 +31,10 @@ export default function AdminCreateTest() {
   const [sectionForm, setSectionForm] = useState<SectionForm>({ title: '', sectionType: 'MCQ', marksPerQuestion: 1 })
   const [questionForms, setQuestionForms] = useState<Record<number, QuestionForm[]>>({})
 
-  const { register, handleSubmit, formState: { errors } } = useForm<{
+  const { id } = useParams()
+  const isEdit = !!id
+
+  const { register, handleSubmit, reset, formState: { errors } } = useForm<{
     title: string; description: string; durationMinutes: number;
     totalMarks: number; passingMarks: number; negativeMarking: boolean;
     negativeMarksPerWrong: number; status: string; isRandomized: boolean; maxAttempts: number
@@ -37,15 +46,75 @@ export default function AdminCreateTest() {
     }
   })
 
-  // Step 1: Create exam
-  const createExam = async (data: any) => {
+  // Load existing data if editing
+  useEffect(() => {
+    if (isEdit) {
+      setLoading(true)
+      testApi.adminGetById(+id!)
+        .then(exam => {
+          setExamId(exam.id)
+          reset({
+            title: exam.title,
+            description: exam.description,
+            durationMinutes: exam.durationMinutes,
+            totalMarks: exam.totalMarks,
+            passingMarks: exam.passingMarks,
+            negativeMarking: exam.negativeMarking,
+            negativeMarksPerWrong: exam.negativeMarksPerWrong,
+            status: exam.status,
+            isRandomized: exam.isRandomized,
+            maxAttempts: exam.maxAttempts
+          })
+          if (exam.sections) {
+            setSections(exam.sections)
+            const qMap: Record<number, QuestionForm[]> = {}
+            exam.sections.forEach(sec => {
+              if (sec.id && sec.questions) {
+                // Map Question type to QuestionForm type to avoid lint errors
+                qMap[sec.id] = sec.questions.map(q => ({
+                  questionText: q.questionText,
+                  questionType: q.questionType,
+                  marks: q.marks,
+                  difficulty: q.difficulty,
+                  options: (q.options || []).map(o => ({
+                    optionText: o.optionText,
+                    isCorrect: !!o.isCorrect
+                  })),
+                  boilerplate: q.boilerplate,
+                  constraints: q.constraints,
+                  sampleInput: q.sampleInput,
+                  sampleOutput: q.sampleOutput,
+                  testCases: q.testCases?.map(tc => ({
+                    input: tc.input,
+                    expectedOutput: tc.expectedOutput,
+                    isHidden: !!tc.isHidden
+                  }))
+                }))
+              }
+            })
+            setQuestionForms(qMap)
+          }
+        })
+        .catch(() => toast.error('Failed to load test details'))
+        .finally(() => setLoading(false))
+    }
+  }, [id, isEdit, reset])
+
+  // Step 1: Create or update exam
+  const saveExam = async (data: any) => {
     setLoading(true)
     try {
-      const exam = await testApi.adminCreate(data)
-      setExamId(exam.id)
-      toast.success('Test created! Now add sections.')
-      setStep(2)
-    } catch { toast.error('Failed to create test') }
+      if (isEdit) {
+        await testApi.adminUpdate(+id!, data)
+        toast.success('Test updated!')
+        setStep(2)
+      } else {
+        const exam = await testApi.adminCreate(data)
+        setExamId(exam.id)
+        toast.success('Test created! Now add sections.')
+        setStep(2)
+      }
+    } catch { toast.error(isEdit ? 'Failed to update test' : 'Failed to create test') }
     finally { setLoading(false) }
   }
 
@@ -97,7 +166,7 @@ export default function AdminCreateTest() {
           <ArrowLeft size={20} />
         </button>
         <div>
-          <h1 className="page-title">Create New Test</h1>
+          <h1 className="page-title">{isEdit ? 'Edit Test' : 'Create New Test'}</h1>
           <p className="page-subtitle">Step {step} of 3</p>
         </div>
       </div>
@@ -117,7 +186,7 @@ export default function AdminCreateTest() {
 
       {/* Step 1: Test Info */}
       {step === 1 && (
-        <form onSubmit={handleSubmit(createExam)} className="glass-card p-6 space-y-4">
+        <form onSubmit={handleSubmit(saveExam)} className="glass-card p-6 space-y-4">
           <h2 className="text-base font-semibold">Test Information</h2>
 
           <div>
@@ -181,7 +250,8 @@ export default function AdminCreateTest() {
           <button type="submit" disabled={loading}
             className="w-full py-2.5 bg-primary text-primary-foreground rounded-lg font-semibold text-sm hover:bg-primary/90 transition-all flex items-center justify-center gap-2 disabled:opacity-60 shadow-lg shadow-primary/20">
             {loading ? <Loader2 size={16} className="animate-spin" /> : null}
-            {loading ? 'Creating test…' : 'Create Test & Continue →'}
+            {!loading && isEdit && <Save size={16} />}
+            {loading ? (isEdit ? 'Saving…' : 'Creating test…') : (isEdit ? 'Save Changes & Continue →' : 'Create Test & Continue →')}
           </button>
         </form>
       )}
@@ -273,7 +343,18 @@ function QuestionBuilder({ section, onAdd, loading, questions }: {
   loading: boolean
   questions: QuestionForm[]
 }) {
-  const [form, setForm] = useState<QuestionForm>({
+  const defaultBoilerplates: Record<string, string> = {
+    java: `public class Solution {\n    public static void main(String[] args) {\n        // Write your solution here\n    }\n}`,
+    python: `def solution():\n    # Write your solution here\n    pass\n\nif __name__ == '__main__':\n    solution()`,
+    cpp: `#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    // Write your solution here\n    return 0;\n}`,
+    c: `#include <stdio.h>\n\nint main() {\n    // Write your solution here\n    return 0;\n}`,
+    javascript: `// Write your solution here\nfunction solution() {\n\n}\n\nconsole.log(solution());`,
+  }
+
+  const [form, setForm] = useState<QuestionForm & {
+    boilerplate: string; constraints: string; sampleInput: string; sampleOutput: string; defaultLang: string
+    testCases: { input: string; expectedOutput: string; isHidden: boolean }[]
+  }>({
     questionText: '', questionType: section.sectionType === 'CODING' ? 'CODING' : 'MCQ',
     marks: 1, difficulty: 'MEDIUM',
     options: [
@@ -282,6 +363,12 @@ function QuestionBuilder({ section, onAdd, loading, questions }: {
       { optionText: '', isCorrect: false },
       { optionText: '', isCorrect: false },
     ],
+    boilerplate: defaultBoilerplates.java,
+    defaultLang: 'java',
+    constraints: '',
+    sampleInput: '',
+    sampleOutput: '',
+    testCases: [{ input: '', expectedOutput: '', isHidden: false }],
   })
 
   const isCoding = form.questionType === 'CODING'
@@ -295,33 +382,87 @@ function QuestionBuilder({ section, onAdd, loading, questions }: {
     setForm(p => ({ ...p, options: opts }))
   }
 
+  const handleLangChange = (lang: string) => {
+    setForm(p => ({ ...p, defaultLang: lang, boilerplate: defaultBoilerplates[lang] || '' }))
+  }
+
   const submit = () => {
     if (!form.questionText.trim()) return toast.error('Question text is required')
-    onAdd(form)
-    setForm(p => ({ ...p, questionText: '', options: p.options.map(o => ({ ...o, isCorrect: false, optionText: '' })) }))
+    if (!isCoding) {
+      const hasCorrect = form.options.some(o => o.isCorrect)
+      const hasOptions = form.options.some(o => o.optionText.trim())
+      if (!hasOptions) return toast.error('At least one option is required')
+      if (!hasCorrect) return toast.error('Mark at least one correct option')
+    }
+
+    // Only send coding-specific fields for CODING questions
+    // For MCQ/MULTI_SELECT/TRUE_FALSE, omit testCases/boilerplate to avoid
+    // a backend 500 error caused by inserting test cases with null problem_id
+    const payload: QuestionForm = isCoding
+      ? { ...form }
+      : {
+          questionText: form.questionText,
+          questionType: form.questionType,
+          marks: form.marks,
+          difficulty: form.difficulty,
+          options: form.options,
+        }
+
+    onAdd(payload)
+    setForm(p => ({
+      ...p,
+      questionText: '',
+      constraints: '',
+      sampleInput: '',
+      sampleOutput: '',
+      testCases: [{ input: '', expectedOutput: '', isHidden: false }],
+      options: p.options.map(o => ({ ...o, isCorrect: false, optionText: '' }))
+    }))
   }
 
   return (
     <div className="glass-card p-5 space-y-4">
-      <h3 className="text-sm font-semibold">Section: {section.title}</h3>
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-semibold">Section: <span className="text-primary">{section.title}</span></h3>
+        {questions.length > 0 && (
+          <span className="text-xs bg-emerald-500/15 text-emerald-400 px-2 py-0.5 rounded-full font-medium">
+            {questions.length} question{questions.length !== 1 ? 's' : ''} added
+          </span>
+        )}
+      </div>
 
       {questions.length > 0 && (
-        <div className="space-y-1">
+        <div className="space-y-1 max-h-28 overflow-y-auto">
           {questions.map((q, i) => (
-            <p key={i} className="text-xs text-muted-foreground px-2 py-1 bg-secondary/50 rounded">
-              ✓ {q.questionText.slice(0, 80)}
-            </p>
+            <div key={i} className="flex items-center gap-2 text-xs px-2 py-1.5 bg-secondary/50 rounded">
+              <span className="text-emerald-400 shrink-0">✓</span>
+              <span className="text-muted-foreground font-mono shrink-0">{i + 1}.</span>
+              <span className="truncate text-muted-foreground">{q.questionText.slice(0, 70)}</span>
+              <span className="shrink-0 ml-auto bg-secondary text-muted-foreground px-1.5 py-0.5 rounded text-[10px]">{q.questionType}</span>
+            </div>
           ))}
         </div>
       )}
 
+      <hr className="border-border" />
+
+      {/* Question Text */}
       <div>
-        <label className="block text-sm font-medium mb-1.5">Question Text *</label>
-        <textarea value={form.questionText} onChange={e => setForm(p => ({ ...p, questionText: e.target.value }))}
-          rows={3} placeholder="Enter your question…"
-          className="w-full px-3 py-2 rounded-lg bg-secondary border border-border text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none" />
+        <label className="block text-sm font-medium mb-1.5">
+          {isCoding ? 'Problem Statement *' : 'Question Text *'}
+        </label>
+        <textarea
+          value={form.questionText}
+          onChange={e => setForm(p => ({ ...p, questionText: e.target.value }))}
+          rows={isCoding ? 4 : 3}
+          placeholder={isCoding
+            ? "Describe the problem: what to compute, what the input/output looks like…"
+            : "Enter your question…"}
+          className="w-full px-3 py-2 rounded-lg bg-secondary border border-border text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none"
+        />
       </div>
 
+      {/* Type / Marks / Difficulty row */}
       <div className="grid grid-cols-3 gap-3">
         <div>
           <label className="block text-sm font-medium mb-1.5">Type</label>
@@ -349,9 +490,12 @@ function QuestionBuilder({ section, onAdd, loading, questions }: {
         </div>
       </div>
 
+      {/* MCQ Options */}
       {!isCoding && (
         <div>
-          <label className="block text-sm font-medium mb-2">Options (mark correct)</label>
+          <label className="block text-sm font-medium mb-2">
+            Options <span className="text-muted-foreground font-normal">(check the correct {form.questionType === 'MULTI_SELECT' ? 'ones' : 'one'})</span>
+          </label>
           <div className="space-y-2">
             {form.options.map((opt, i) => (
               <div key={i} className="flex items-center gap-3">
@@ -359,7 +503,7 @@ function QuestionBuilder({ section, onAdd, loading, questions }: {
                   type={form.questionType === 'MULTI_SELECT' ? 'checkbox' : 'radio'}
                   checked={opt.isCorrect}
                   onChange={e => handleOptionChange(i, 'isCorrect', e.target.checked)}
-                  className="shrink-0"
+                  className="shrink-0 w-4 h-4 accent-primary"
                 />
                 <input
                   value={opt.optionText}
@@ -373,11 +517,194 @@ function QuestionBuilder({ section, onAdd, loading, questions }: {
         </div>
       )}
 
+      {/* ──── CODING QUESTION SETUP ──── */}
+      {isCoding && (
+        <div className="rounded-xl border border-primary/25 bg-primary/5 p-4 space-y-4">
+          <p className="text-xs font-semibold text-primary flex items-center gap-1.5">
+            <span>⌨</span> Coding Question Configuration
+          </p>
+
+          {/* Boilerplate */}
+          <div>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-sm font-medium">Starter Boilerplate Code</label>
+              <div className="flex items-center gap-1">
+                {(['java','python','cpp','c','javascript'] as const).map(lang => (
+                  <button
+                    key={lang}
+                    type="button"
+                    onClick={() => handleLangChange(lang)}
+                    className={`text-xs px-2 py-0.5 rounded transition-all ${form.defaultLang === lang ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground hover:text-foreground'}`}
+                  >
+                    {lang === 'cpp' ? 'C++' : lang === 'javascript' ? 'JS' : lang.charAt(0).toUpperCase() + lang.slice(1)}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <textarea
+              value={form.boilerplate}
+              onChange={e => setForm(p => ({ ...p, boilerplate: e.target.value }))}
+              rows={7}
+              placeholder="Starter code shown to students in the editor…"
+              className="w-full px-3 py-2.5 rounded-lg bg-[#1a1a2e] border border-border/50 text-sm text-emerald-300 font-mono placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none leading-relaxed"
+              spellCheck={false}
+            />
+          </div>
+
+          {/* Constraints */}
+          <div>
+            <label className="block text-sm font-medium mb-1.5">Constraints <span className="text-muted-foreground font-normal text-xs">(optional)</span></label>
+            <input
+              value={form.constraints}
+              onChange={e => setForm(p => ({ ...p, constraints: e.target.value }))}
+              placeholder="e.g. 1 ≤ n ≤ 10^5, Time: 1 second, Memory: 256 MB"
+              className="w-full px-3 py-2 rounded-lg bg-secondary border border-border text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+            />
+          </div>
+
+          {/* ── TEST CASES (visible + hidden) ── */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <div>
+                <label className="text-sm font-medium">Test Cases</label>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Visible cases are shown to students. Hidden cases are used for grading only.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setForm(p => ({
+                  ...p,
+                  testCases: [...(p.testCases || []), { input: '', expectedOutput: '', isHidden: false }]
+                }))}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-primary/15 text-primary hover:bg-primary/25 transition-all"
+              >
+                <PlusCircle size={12} /> Add Test Case
+              </button>
+            </div>
+
+            <div className="space-y-2.5">
+              {(form.testCases || []).map((tc, idx) => (
+                <div
+                  key={idx}
+                  className={`rounded-xl border p-3 space-y-2.5 transition-all ${
+                    tc.isHidden ? 'border-amber-500/30 bg-amber-500/5' : 'border-border bg-secondary/30'
+                  }`}
+                >
+                  {/* Case header row */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <span className="text-xs font-semibold text-muted-foreground">
+                        Test #{idx + 1}
+                      </span>
+                      {tc.isHidden && (
+                        <span className="text-[10px] font-bold bg-amber-500/20 text-amber-400 px-1.5 py-0.5 rounded-full uppercase tracking-wide">
+                          Hidden
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={tc.isHidden}
+                          onChange={e => {
+                            const tcs = [...(form.testCases || [])]
+                            tcs[idx] = { ...tcs[idx], isHidden: e.target.checked }
+                            setForm(p => ({ ...p, testCases: tcs }))
+                          }}
+                          className="w-3.5 h-3.5 rounded border-border accent-amber-500"
+                        />
+                        Hidden from students
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => setForm(p => ({
+                          ...p,
+                          testCases: (p.testCases || []).filter((_, i) => i !== idx)
+                        }))}
+                        disabled={(form.testCases?.length || 0) <= 1}
+                        className="p-1 text-muted-foreground hover:text-red-400 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Input / Expected Output */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-[10px] font-semibold text-muted-foreground uppercase mb-1">Input</label>
+                      <textarea
+                        value={tc.input}
+                        onChange={e => {
+                          const tcs = [...(form.testCases || [])]
+                          tcs[idx] = { ...tcs[idx], input: e.target.value }
+                          setForm(p => ({ ...p, testCases: tcs }))
+                        }}
+                        rows={3}
+                        placeholder={"5\n1 2 3 4 5"}
+                        className="w-full px-2.5 py-2 rounded-lg bg-secondary border border-border text-xs font-mono placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-semibold text-muted-foreground uppercase mb-1">Expected Output</label>
+                      <textarea
+                        value={tc.expectedOutput}
+                        onChange={e => {
+                          const tcs = [...(form.testCases || [])]
+                          tcs[idx] = { ...tcs[idx], expectedOutput: e.target.value }
+                          setForm(p => ({ ...p, testCases: tcs }))
+                        }}
+                        rows={3}
+                        placeholder={"15"}
+                        className="w-full px-2.5 py-2 rounded-lg bg-secondary border border-border text-xs font-mono placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none"
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Summary badge */}
+            {(form.testCases?.length || 0) > 0 && (
+              <div className="flex items-center gap-2 mt-2">
+                <span className="text-xs text-muted-foreground">
+                  {form.testCases?.filter(t => !t.isHidden).length || 0} visible,{' '}
+                  <span className="text-amber-400 font-medium">
+                    {form.testCases?.filter(t => t.isHidden).length || 0} hidden
+                  </span>
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ──── CODE RUNNER (only for coding questions) ──── */}
+      {isCoding && (
+        <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4 space-y-3">
+          <p className="text-xs font-semibold text-emerald-400 flex items-center gap-1.5">
+            <span>▶</span> Test Your Boilerplate
+            <span className="text-muted-foreground font-normal ml-1">
+              — run code against all test cases above ({(form.testCases || []).filter(t => t.input || t.expectedOutput).length} configured)
+            </span>
+          </p>
+          <CodeRunnerPanel
+            testCases={(form.testCases || [])
+              .filter(tc => tc.expectedOutput.trim())
+              .map(tc => ({ input: tc.input, expectedOutput: tc.expectedOutput }))}
+            editorHeight="260px"
+          />
+        </div>
+      )}
+
       <button onClick={submit} disabled={loading}
-        className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition-all disabled:opacity-60">
+        className="flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground rounded-lg text-sm font-semibold hover:bg-primary/90 transition-all disabled:opacity-60 shadow-lg shadow-primary/20">
         {loading ? <Loader2 size={14} className="animate-spin" /> : <PlusCircle size={14} />}
-        Add Question
+        Add {isCoding ? 'Coding ' : ''}Question
       </button>
     </div>
   )
 }
+

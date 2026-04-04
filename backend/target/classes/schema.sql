@@ -125,3 +125,86 @@ CREATE INDEX IF NOT EXISTS idx_test_attempts_user ON test_attempts(user_id);
 CREATE INDEX IF NOT EXISTS idx_test_attempts_exam ON test_attempts(exam_id);
 CREATE INDEX IF NOT EXISTS idx_questions_section ON questions(section_id);
 CREATE INDEX IF NOT EXISTS idx_options_question ON options(question_id);
+
+-- =======================================
+-- Online Coding Assessment System Additions
+-- =======================================
+
+-- Problems table
+CREATE TABLE IF NOT EXISTS problems (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    title VARCHAR(200) NOT NULL,
+    description TEXT NOT NULL,
+    difficulty ENUM('EASY', 'MEDIUM', 'HARD') NOT NULL DEFAULT 'EASY',
+    tags VARCHAR(500),
+    time_limit DOUBLE NOT NULL DEFAULT 2.0,
+    memory_limit INT NOT NULL DEFAULT 256,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+-- Test cases table
+CREATE TABLE IF NOT EXISTS test_cases (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    problem_id BIGINT,
+    question_id BIGINT,
+    input TEXT NOT NULL,
+    expected_output TEXT NOT NULL,
+    is_hidden BOOLEAN NOT NULL DEFAULT FALSE,
+    FOREIGN KEY (problem_id) REFERENCES problems(id) ON DELETE CASCADE,
+    FOREIGN KEY (question_id) REFERENCES questions(id) ON DELETE CASCADE
+);
+
+-- Submissions table
+CREATE TABLE IF NOT EXISTS submissions (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    problem_id BIGINT NOT NULL,
+    code TEXT NOT NULL,
+    language ENUM('C', 'CPP', 'JAVA', 'PYTHON', 'JAVASCRIPT') NOT NULL,
+    status ENUM('PENDING', 'ACCEPTED', 'WRONG_ANSWER', 'TIME_LIMIT_EXCEEDED', 'MEMORY_LIMIT_EXCEEDED', 'RUNTIME_ERROR', 'COMPILE_ERROR') NOT NULL,
+    execution_time DOUBLE,
+    memory_used INT,
+    error_message TEXT,
+    submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (problem_id) REFERENCES problems(id) ON DELETE CASCADE
+);
+
+-- Contests table
+CREATE TABLE IF NOT EXISTS contests (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    title VARCHAR(200) NOT NULL,
+    description TEXT,
+    start_time DATETIME NOT NULL,
+    end_time DATETIME NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+-- Contest Problems joining table
+CREATE TABLE IF NOT EXISTS contest_problems (
+    contest_id BIGINT NOT NULL,
+    problem_id BIGINT NOT NULL,
+    PRIMARY KEY (contest_id, problem_id),
+    FOREIGN KEY (contest_id) REFERENCES contests(id) ON DELETE CASCADE,
+    FOREIGN KEY (problem_id) REFERENCES problems(id) ON DELETE CASCADE
+);
+
+-- Contest Results table
+CREATE TABLE IF NOT EXISTS contest_results (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    contest_id BIGINT NOT NULL,
+    score INT NOT NULL DEFAULT 0,
+    contest_rank INT,
+    submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (contest_id) REFERENCES contests(id) ON DELETE CASCADE
+);
+
+-- Indexes for coding additions
+CREATE INDEX IF NOT EXISTS idx_submissions_user ON submissions(user_id);
+CREATE INDEX IF NOT EXISTS idx_submissions_problem ON submissions(problem_id);
+CREATE INDEX IF NOT EXISTS idx_test_cases_question ON test_cases(question_id);
+CREATE INDEX IF NOT EXISTS idx_contest_results_contest ON contest_results(contest_id);

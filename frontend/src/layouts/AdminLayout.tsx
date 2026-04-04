@@ -4,7 +4,7 @@ import { useAuthStore } from '@/store/useAuthStore'
 import { cn, getInitials } from '@/utils'
 import {
   LayoutDashboard, FileText, HelpCircle, Users, BarChart2,
-  Megaphone, LogOut, Menu, X, ChevronRight, Bell
+  Megaphone, LogOut, Menu, X, ChevronRight, Bell, Code2
 } from 'lucide-react'
 
 const navItems = [
@@ -12,6 +12,7 @@ const navItems = [
   { to: '/admin/tests',         icon: FileText,        label: 'Tests' },
   { to: '/admin/questions',     icon: HelpCircle,      label: 'Questions' },
   { to: '/admin/users',         icon: Users,           label: 'Users' },
+  { to: '/admin/problems',      icon: Code2,           label: 'Coding Problems' },
   { to: '/admin/results',       icon: BarChart2,       label: 'Results' },
   { to: '/admin/announcements', icon: Megaphone,       label: 'Announcements' },
 ]

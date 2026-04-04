@@ -6,42 +6,36 @@ import type { Analytics, Exam } from '@/types'
 import { formatRelative } from '@/utils'
 import {
   Users, BookOpen, ClipboardCheck, TrendingUp,
-  PlusCircle, ArrowRight, Activity, Target, Award
+  PlusCircle, ArrowRight, Activity, Target, Award,
+  Clock, CheckCircle2, AlertCircle
 } from 'lucide-react'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, LineChart, Line, Legend
+  PieChart, Pie, Cell, LineChart, Line, Legend, AreaChart, Area
 } from 'recharts'
 
-const COLORS = ['#6366f1', '#8b5cf6', '#22c55e', '#f59e0b', '#ef4444']
+const COLORS = ['#6366f1', '#8b5cf6', '#22c55e', '#f59e0b', '#ef4444', '#ec4899', '#06b6d4']
 
 function StatCard({ icon: Icon, label, value, color, sub }: {
   icon: React.ElementType; label: string; value: string | number; color: string; sub?: string
 }) {
   return (
-    <div className="stat-card group">
-      <div className="flex items-center justify-between">
-        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${color}`}>
-          <Icon size={20} className="text-white" />
+    <div className="stat-card group hover:scale-[1.02] transition-all duration-300">
+      <div className="flex items-center justify-between mb-4">
+        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${color} shadow-lg shadow-current/10`}>
+          <Icon size={24} className="text-white" />
         </div>
-        <TrendingUp size={14} className="text-muted-foreground group-hover:text-primary transition-colors" />
+        <div className="flex flex-col items-end">
+          <TrendingUp size={16} className="text-emerald-500" />
+          <span className="text-[10px] font-medium text-emerald-500">+12%</span>
+        </div>
       </div>
       <div>
-        <p className="text-2xl font-bold">{value}</p>
-        <p className="text-sm text-muted-foreground">{label}</p>
-        {sub && <p className="text-xs text-muted-foreground/70 mt-0.5">{sub}</p>}
-      </div>
-    </div>
-  )
-}
-
-function SkeletonCard() {
-  return (
-    <div className="stat-card">
-      <div className="skeleton h-10 w-10 rounded-xl" />
-      <div className="space-y-2">
-        <div className="skeleton h-7 w-16 rounded" />
-        <div className="skeleton h-4 w-24 rounded" />
+        <p className="text-3xl font-bold tracking-tight">{value}</p>
+        <p className="text-sm font-medium text-muted-foreground mt-1">{label}</p>
+        {sub && <p className="text-xs text-muted-foreground/60 mt-1.5 flex items-center gap-1">
+          <Activity size={10} /> {sub}
+        </p>}
       </div>
     </div>
   )
@@ -62,140 +56,157 @@ export default function AdminDashboard() {
     }).finally(() => setLoading(false))
   }, [])
 
-  // Chart data
-  const pieData = analytics ? [
-    { name: 'Students', value: analytics.totalStudents },
-    { name: 'Admins',   value: analytics.totalAdmins },
-  ] : []
+  const pieData = analytics?.categoryDistribution 
+    ? Object.entries(analytics.categoryDistribution).map(([name, value]) => ({ name, value }))
+    : []
 
-  const barData = analytics ? [
-    { name: 'Users',     count: analytics.totalUsers },
-    { name: 'Exams',     count: analytics.totalExams },
-    { name: 'Attempts',  count: analytics.totalAttempts },
-    { name: 'Questions', count: analytics.totalQuestions },
-  ] : []
-
-  const lineData = [
-    { month: 'Jan', attempts: 12, score: 68 },
-    { month: 'Feb', attempts: 19, score: 72 },
-    { month: 'Mar', attempts: 31, score: 65 },
-    { month: 'Apr', attempts: 27, score: 78 },
-    { month: 'May', attempts: 45, score: 82 },
-    { month: 'Jun', attempts: 38, score: 75 },
-  ]
+  const trendData = analytics?.attemptTrends || []
 
   return (
-    <div className="space-y-6">
-      <div className="page-header flex items-center justify-between">
+    <div className="space-y-8 pb-10">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="page-title">Admin Dashboard</h1>
-          <p className="page-subtitle">Platform overview and analytics</p>
+          <h1 className="text-3xl font-extrabold tracking-tight">System Overview</h1>
+          <p className="text-muted-foreground">Real-time platform performance and user engagement</p>
         </div>
-        <Link to="/admin/tests/create"
-          className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition-all shadow-lg shadow-primary/20">
-          <PlusCircle size={16} /> New Test
-        </Link>
+        <div className="flex items-center gap-3">
+          <button className="px-4 py-2 border border-border rounded-xl text-sm font-medium hover:bg-muted transition-colors">
+            Download Report
+          </button>
+          <Link to="/admin/tests/create"
+            className="flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground rounded-xl text-sm font-bold hover:opacity-90 transition-all shadow-xl shadow-primary/25">
+            <PlusCircle size={18} /> Create New Test
+          </Link>
+        </div>
       </div>
 
       {/* Stat Cards */}
-      <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
         {loading ? (
-          Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)
+          Array.from({ length: 4 }).map((_, i) => <div key={i} className="stat-card skeleton h-40 rounded-3xl" />)
         ) : analytics ? (
           <>
-            <StatCard icon={Users}         label="Total Users"      value={analytics.totalUsers}       color="bg-primary"         sub={`${analytics.totalStudents} students`} />
-            <StatCard icon={BookOpen}      label="Total Exams"      value={analytics.totalExams}       color="bg-violet-500"      sub={`${analytics.activeExams} active`} />
-            <StatCard icon={ClipboardCheck} label="Total Attempts"  value={analytics.totalAttempts}    color="bg-emerald-500"     sub={`${analytics.completedAttempts} completed`} />
-            <StatCard icon={Target}        label="Avg. Score"       value={`${analytics.averageScore}%`} color="bg-amber-500"    sub={`${analytics.totalQuestions} questions`} />
+            <StatCard icon={Users}         label="Total Candidates" value={analytics.totalStudents}  color="bg-primary"       sub="Active in last 24h" />
+            <StatCard icon={BookOpen}      label="Live Exams"       value={analytics.activeExams}    color="bg-indigo-500"    sub={`${analytics.totalExams} total exams`} />
+            <StatCard icon={ClipboardCheck} label="Submissions"     value={analytics.totalAttempts}  color="bg-emerald-500"   sub={`${analytics.completedAttempts} graded`} />
+            <StatCard icon={Target}        label="Average Grade"    value={`${analytics.averageScore}%`} color="bg-amber-500" sub="Industry parity" />
           </>
         ) : null}
       </div>
 
-      {/* Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* Line Chart */}
-        <div className="glass-card p-5 lg:col-span-2">
-          <h3 className="text-sm font-semibold mb-4 flex items-center gap-2">
-            <Activity size={16} className="text-primary" /> Attempt Trends
-          </h3>
-          <ResponsiveContainer width="100%" height={200}>
-            <LineChart data={lineData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-              <XAxis dataKey="month" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} />
-              <YAxis tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Main Trend Chart */}
+        <div className="glass-card p-6 lg:col-span-2 relative overflow-hidden group">
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <h3 className="text-lg font-bold">Participation Trends</h3>
+              <p className="text-xs text-muted-foreground mt-1">Monthly student engagement and performance</p>
+            </div>
+            <Activity className="text-primary opacity-20 group-hover:opacity-100 transition-opacity" />
+          </div>
+          <ResponsiveContainer width="100%" height={300}>
+            <AreaChart data={trendData}>
+              <defs>
+                <linearGradient id="colorAttempts" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3}/>
+                  <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+              <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} />
+              <YAxis axisLine={false} tickLine={false} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} />
               <Tooltip
-                contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 8 }}
-                labelStyle={{ color: 'hsl(var(--foreground))' }}
+                contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 12, boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
               />
-              <Legend />
-              <Line type="monotone" dataKey="attempts" stroke="#6366f1" strokeWidth={2} dot={false} />
-              <Line type="monotone" dataKey="score"    stroke="#22c55e" strokeWidth={2} dot={false} />
-            </LineChart>
+              <Area type="monotone" dataKey="count" name="Attempts" stroke="#6366f1" strokeWidth={3} fillOpacity={1} fill="url(#colorAttempts)" />
+              <Area type="monotone" dataKey="avgScore" name="Avg Score" stroke="#22c55e" strokeWidth={3} fillOpacity={0} />
+            </AreaChart>
           </ResponsiveContainer>
         </div>
 
-        {/* Pie Chart */}
-        <div className="glass-card p-5">
-          <h3 className="text-sm font-semibold mb-4 flex items-center gap-2">
-            <Award size={16} className="text-primary" /> User Distribution
-          </h3>
-          <ResponsiveContainer width="100%" height={200}>
+        {/* Category Pie */}
+        <div className="glass-card p-6">
+          <h3 className="text-lg font-bold mb-8">Specializations</h3>
+          <ResponsiveContainer width="100%" height={260}>
             <PieChart>
-              <Pie data={pieData} cx="50%" cy="50%" innerRadius={55} outerRadius={80}
-                   paddingAngle={4} dataKey="value" label={({ name, value }) => `${name}: ${value}`}
-                   labelLine={false}>
+              <Pie data={pieData} cx="50%" cy="50%" innerRadius={60} outerRadius={90}
+                   paddingAngle={8} dataKey="value" stroke="none">
                 {pieData.map((_, index) => (
                   <Cell key={index} fill={COLORS[index % COLORS.length]} />
                 ))}
               </Pie>
-              <Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 8 }} />
+              <Tooltip contentStyle={{ background: 'hsl(var(--card))', border: 'none', borderRadius: 12, boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }} />
+              <Legend verticalAlign="bottom" align="center" iconType="circle" wrapperStyle={{ paddingTop: 20 }} />
             </PieChart>
           </ResponsiveContainer>
         </div>
       </div>
 
-      {/* Bar Chart */}
-      <div className="glass-card p-5">
-        <h3 className="text-sm font-semibold mb-4">Platform Stats Overview</h3>
-        <ResponsiveContainer width="100%" height={160}>
-          <BarChart data={barData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-            <XAxis dataKey="name" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} />
-            <YAxis tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} />
-            <Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 8 }} />
-            <Bar dataKey="count" fill="#6366f1" radius={[4, 4, 0, 0]} />
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
-
-      {/* Recent Tests */}
-      <div className="glass-card p-5">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-semibold">Recent Tests</h3>
-          <Link to="/admin/tests" className="text-xs text-primary hover:underline flex items-center gap-1">
-            View all <ArrowRight size={12} />
-          </Link>
-        </div>
-        <div className="divide-y divide-border">
-          {loading ? (
-            Array.from({ length: 3 }).map((_, i) => <div key={i} className="py-3 skeleton h-8 rounded" />)
-          ) : recentTests.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-4 text-center">No tests yet — <Link to="/admin/tests/create" className="text-primary hover:underline">Create one</Link></p>
-          ) : (
-            recentTests.map(test => (
-              <div key={test.id} className="py-3 flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium">{test.title}</p>
-                  <p className="text-xs text-muted-foreground">{test.totalQuestions} questions · {test.durationMinutes}m · {test.attemptCount} attempts</p>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Recent Activity */}
+        <div className="glass-card p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-lg font-bold flex items-center gap-2">
+              <Clock size={20} className="text-primary" /> Live Activity
+            </h3>
+            <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+          </div>
+          <div className="space-y-6">
+            {analytics?.recentActivities?.map((activity: any, i: number) => (
+              <div key={i} className="flex gap-4 relative">
+                {i !== (analytics?.recentActivities?.length || 0) - 1 && (
+                  <div className="absolute left-3 top-8 bottom-0 w-[1px] bg-border" />
+                )}
+                <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 z-10 ${
+                  activity.type === 'TEST_STARTED' ? 'bg-indigo-500/10 text-indigo-500' : 'bg-emerald-500/10 text-emerald-500'
+                }`}>
+                  {activity.type === 'TEST_STARTED' ? <Activity size={12} /> : <CheckCircle2 size={12} />}
                 </div>
-                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${
-                  test.status === 'ACTIVE' ? 'badge-active' :
-                  test.status === 'DRAFT' ? 'badge-draft' :
-                  test.status === 'SCHEDULED' ? 'badge-scheduled' : 'badge-disabled'
-                }`}>{test.status}</span>
+                <div className="flex-1">
+                  <p className="text-sm font-medium">{activity.message}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{activity.time}</p>
+                </div>
               </div>
-            ))
-          )}
+            ))}
+            {(!analytics?.recentActivities || analytics.recentActivities.length === 0) && (
+              <div className="text-center py-8 text-muted-foreground">
+                <AlertCircle size={32} className="mx-auto mb-2 opacity-20" />
+                <p className="text-sm">No recent activity detected</p>
+              </div>
+            ) }
+          </div>
+        </div>
+
+        {/* Top Performing Tests */}
+        <div className="glass-card p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-lg font-bold flex items-center gap-2">
+              <Award size={20} className="text-primary" /> Featured Tests
+            </h3>
+            <Link to="/admin/tests" className="text-xs text-primary font-bold hover:underline">Manage All</Link>
+          </div>
+          <div className="space-y-4">
+            {recentTests.map((test: any) => (
+              <div key={test.id} className="p-4 rounded-2xl border border-border/50 bg-muted/30 hover:bg-muted/50 transition-colors flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-xl bg-card flex items-center justify-center border border-border shadow-sm">
+                    <BookOpen size={18} className="text-primary" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-bold">{test.title}</h4>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold mt-0.5">
+                      {test.category || 'General'} • {test.attemptCount} Candidates
+                    </p>
+                  </div>
+                </div>
+                <div className={`px-2 py-1 rounded-lg text-[10px] font-bold border ${
+                  test.status === 'ACTIVE' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 'bg-amber-500/10 text-amber-500 border-amber-500/20'
+                }`}>
+                  {test.status}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>

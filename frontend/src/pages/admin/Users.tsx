@@ -77,11 +77,11 @@ export default function AdminUsers() {
       {/* Table */}
       <div className="glass-card overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full min-w-[750px]">
             <thead>
               <tr className="border-b border-border bg-secondary/30">
-                {['User', 'Email', 'Role', 'Tests', 'Joined', 'Status', 'Actions'].map(h => (
-                  <th key={h} className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">{h}</th>
+                {['User', 'Email', 'Role', 'Tests', 'Joined', 'Status', 'Actions'].map((h, i) => (
+                  <th key={h} className={`text-left py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap ${i === 0 ? 'px-5' : 'px-4'}`}>{h}</th>
                 ))}
               </tr>
             </thead>

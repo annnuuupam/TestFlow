@@ -5,11 +5,13 @@ import com.ots.dto.response.QuestionResponse;
 import com.ots.entity.Option;
 import com.ots.entity.Question;
 import com.ots.entity.Section;
+import com.ots.entity.TestCase;
 import com.ots.enums.QuestionType;
 import com.ots.exception.ResourceNotFoundException;
 import com.ots.repository.OptionRepository;
 import com.ots.repository.QuestionRepository;
 import com.ots.repository.SectionRepository;
+import com.ots.repository.TestCaseRepository;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
@@ -32,6 +34,7 @@ public class QuestionService {
     private final QuestionRepository questionRepository;
     private final SectionRepository sectionRepository;
     private final OptionRepository optionRepository;
+    private final TestCaseRepository testCaseRepository;
     private final ExamService examService;
 
     @Transactional
@@ -47,6 +50,10 @@ public class QuestionService {
                 .explanation(request.getExplanation())
                 .difficulty(request.getDifficulty())
                 .displayOrder(request.getDisplayOrder())
+                .boilerplate(request.getBoilerplate())
+                .constraints(request.getConstraints())
+                .sampleInput(request.getSampleInput())
+                .sampleOutput(request.getSampleOutput())
                 .build();
 
         questionRepository.save(question);
@@ -65,6 +72,19 @@ public class QuestionService {
             }
         }
 
+        if (request.getTestCases() != null) {
+            for (QuestionRequest.TestCaseRequest tcReq : request.getTestCases()) {
+                TestCase testCase = TestCase.builder()
+                        .question(question)
+                        .input(tcReq.getInput())
+                        .expectedOutput(tcReq.getExpectedOutput())
+                        .isHidden(tcReq.isHidden())
+                        .build();
+                testCaseRepository.save(testCase);
+                question.getTestCases().add(testCase);
+            }
+        }
+
         return examService.mapQuestionToResponse(question, true);
     }
 
@@ -78,6 +98,10 @@ public class QuestionService {
         question.setMarks(request.getMarks());
         question.setExplanation(request.getExplanation());
         question.setDifficulty(request.getDifficulty());
+        question.setBoilerplate(request.getBoilerplate());
+        question.setConstraints(request.getConstraints());
+        question.setSampleInput(request.getSampleInput());
+        question.setSampleOutput(request.getSampleOutput());
 
         // Re-create options
         optionRepository.deleteByQuestionId(id);
@@ -94,6 +118,22 @@ public class QuestionService {
                         .build();
                 optionRepository.save(option);
                 question.getOptions().add(option);
+            }
+        }
+
+        // Re-create test cases
+        testCaseRepository.deleteByQuestionId(id);
+        question.getTestCases().clear();
+        if (request.getTestCases() != null) {
+            for (QuestionRequest.TestCaseRequest tcReq : request.getTestCases()) {
+                TestCase testCase = TestCase.builder()
+                        .question(question)
+                        .input(tcReq.getInput())
+                        .expectedOutput(tcReq.getExpectedOutput())
+                        .isHidden(tcReq.isHidden())
+                        .build();
+                testCaseRepository.save(testCase);
+                question.getTestCases().add(testCase);
             }
         }
 

@@ -18,6 +18,12 @@ public class QuestionResponse {
     private List<OptionResponse> options;
     // explanation only included in result view (not during exam)
     private String explanation;
+    // Coding question specific fields
+    private String boilerplate;
+    private String constraints;
+    private String sampleInput;
+    private String sampleOutput;
+    private List<TestCaseResponse> testCases;
 
     @Data
     @Builder

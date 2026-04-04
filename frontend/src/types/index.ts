@@ -52,6 +52,12 @@ export interface Question {
   displayOrder: number
   options: Option[]
   explanation?: string
+  // Coding question specific fields
+  boilerplate?: string
+  constraints?: string
+  sampleInput?: string
+  sampleOutput?: string
+  testCases?: TestCase[]
 }
 
 // Section
@@ -85,6 +91,7 @@ export interface Exam {
   totalQuestions: number
   sectionCount: number
   attemptCount: number
+  category?: string
   sections?: Section[]
 }
 
@@ -144,6 +151,21 @@ export interface Analytics {
   completedAttempts: number
   averageScore: number
   totalQuestions: number
+  attemptTrends?: TrendPoint[]
+  categoryDistribution?: Record<string, number>
+  recentActivities?: RecentActivity[]
+}
+
+export interface TrendPoint {
+  label: string
+  count: number
+  avgScore: number
+}
+
+export interface RecentActivity {
+  message: string
+  time: string
+  type: 'TEST_STARTED' | 'TEST_SUBMITTED' | 'USER_JOINED' | string
 }
 
 // Announcement
@@ -174,4 +196,43 @@ export interface AnswerState {
     textAnswer: string
     markedForReview: boolean
   }
+}
+
+// ============================================================
+// Coding Platform Types
+// ============================================================
+
+export type ProblemDifficulty = 'EASY' | 'MEDIUM' | 'HARD';
+export type SubmissionStatus = 'PENDING' | 'ACCEPTED' | 'WRONG_ANSWER' | 'TIME_LIMIT_EXCEEDED' | 'MEMORY_LIMIT_EXCEEDED' | 'RUNTIME_ERROR' | 'COMPILE_ERROR';
+export type Language = 'C' | 'CPP' | 'JAVA' | 'PYTHON' | 'JAVASCRIPT';
+
+export interface TestCase {
+  id?: number;
+  input: string;
+  expectedOutput: string;
+  isHidden: boolean;
+}
+
+export interface Problem {
+  id: number;
+  title: string;
+  description: string;
+  difficulty: ProblemDifficulty;
+  tags: string;
+  timeLimit: number;
+  memoryLimit: number;
+  testCases?: TestCase[];
+}
+
+export interface Submission {
+  id: number;
+  problemId: number;
+  problemTitle: string;
+  code: string;
+  language: Language;
+  status: SubmissionStatus;
+  executionTime?: number;
+  memoryUsed?: number;
+  errorMessage?: string;
+  submittedAt: string;
 }

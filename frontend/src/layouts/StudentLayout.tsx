@@ -1,11 +1,12 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/store/useAuthStore'
 import { cn, getInitials } from '@/utils'
-import { LayoutDashboard, ClipboardList, BarChart2, Trophy, LogOut, Bell } from 'lucide-react'
+import { LayoutDashboard, ClipboardList, BarChart2, Trophy, LogOut, Bell, Code2 } from 'lucide-react'
 
 const navItems = [
   { to: '/student',         icon: LayoutDashboard, label: 'Dashboard', exact: true },
   { to: '/student/tests',   icon: ClipboardList,   label: 'Tests' },
+  { to: '/student/problems',icon: Code2,           label: 'Coding Problems' },
   { to: '/student/results', icon: BarChart2,       label: 'My Results' },
 ]
 

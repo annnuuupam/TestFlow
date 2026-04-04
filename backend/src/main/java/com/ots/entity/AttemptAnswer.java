@@ -37,6 +37,9 @@ public class AttemptAnswer {
     @Column(name = "text_answer", columnDefinition = "TEXT")
     private String textAnswer;
 
+    @Column(name = "code_language")
+    private String codeLanguage;
+
     @Column(name = "is_correct")
     private Boolean isCorrect;
 

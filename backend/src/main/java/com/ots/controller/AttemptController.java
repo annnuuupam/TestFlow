@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
@@ -32,7 +33,7 @@ public class AttemptController {
     @PutMapping("/api/attempts/{attemptId}/answer")
     @Operation(summary = "Save or update an answer for a question")
     public ResponseEntity<Void> saveAnswer(@PathVariable Long attemptId,
-                                            @RequestBody AnswerRequest request,
+                                            @jakarta.validation.Valid @RequestBody AnswerRequest request,
                                             @AuthenticationPrincipal UserDetails userDetails) {
         attemptService.saveAnswer(attemptId, request, userDetails.getUsername());
         return ResponseEntity.ok().build();
@@ -56,5 +57,12 @@ public class AttemptController {
     @Operation(summary = "Get all attempts of the current student")
     public ResponseEntity<List<AttemptResponse>> getMyAttempts(@AuthenticationPrincipal UserDetails userDetails) {
         return ResponseEntity.ok(attemptService.getUserAttempts(userDetails.getUsername()));
+    }
+
+    @GetMapping("/api/admin/exams/{examId}/attempts")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Admin: Get all submitted attempts for a specific exam")
+    public ResponseEntity<List<AttemptResponse>> getExamAttempts(@PathVariable Long examId) {
+        return ResponseEntity.ok(attemptService.getAttemptsByExam(examId));
     }
 }

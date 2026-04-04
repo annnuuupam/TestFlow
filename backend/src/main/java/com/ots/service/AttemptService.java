@@ -27,6 +27,7 @@ public class AttemptService {
     private final UserRepository userRepository;
     private final SectionRepository sectionRepository;
     private final QuestionRepository questionRepository;
+    private final CodeRunnerService codeRunnerService;
 
     @Transactional
     public AttemptResponse startAttempt(Long examId, String username) {
@@ -34,12 +35,21 @@ public class AttemptService {
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         Exam exam = examRepository.findById(examId)
                 .orElseThrow(() -> new ResourceNotFoundException("Exam", examId));
+        validateExamIsActive(exam);
 
-        // Check for in-progress attempt (resume)
-        Optional<TestAttempt> existing = attemptRepository
-                .findByExamIdAndUserIdAndStatus(examId, user.getId(), AttemptStatus.IN_PROGRESS);
-        if (existing.isPresent()) {
-            return buildAttemptResponse(existing.get(), exam, false);
+        // Check for in-progress attempt (resume) with deduplication
+        List<TestAttempt> activeAttempts = attemptRepository
+                .findAllByExamIdAndUserIdAndStatus(examId, user.getId(), AttemptStatus.IN_PROGRESS);
+        
+        if (!activeAttempts.isEmpty()) {
+            TestAttempt primary = activeAttempts.get(0);
+            if (activeAttempts.size() > 1) {
+                // Cleanup redundant IN_PROGRESS attempts
+                for (int i = 1; i < activeAttempts.size(); i++) {
+                    attemptRepository.delete(activeAttempts.get(i));
+                }
+            }
+            return buildAttemptResponse(primary, exam, false);
         }
 
         // Check max attempts
@@ -66,6 +76,9 @@ public class AttemptService {
         TestAttempt attempt = getAttemptForUser(attemptId, username);
         Question question = questionRepository.findById(request.getQuestionId())
                 .orElseThrow(() -> new ResourceNotFoundException("Question", request.getQuestionId()));
+        if (!question.getSection().getExam().getId().equals(attempt.getExam().getId())) {
+            throw new BadRequestException("Question does not belong to this exam");
+        }
 
         AttemptAnswer answer = answerRepository
                 .findByAttemptIdAndQuestionId(attemptId, request.getQuestionId())
@@ -77,6 +90,9 @@ public class AttemptService {
         }
         if (request.getTextAnswer() != null) {
             answer.setTextAnswer(request.getTextAnswer());
+        }
+        if (request.getCodeLanguage() != null) {
+            answer.setCodeLanguage(request.getCodeLanguage());
         }
         if (request.getMarkedForReview() != null) {
             answer.setIsMarkedForReview(request.getMarkedForReview());
@@ -153,6 +169,12 @@ public class AttemptService {
                 .collect(Collectors.toList());
     }
 
+    public List<AttemptResponse> getAttemptsByExam(Long examId) {
+        return attemptRepository.findByExamIdOrderByScoreDesc(examId).stream()
+                .map(a -> buildAttemptResponse(a, a.getExam(), false))
+                .collect(Collectors.toList());
+    }
+
     // ---- helpers ----
 
     private TestAttempt getAttemptForUser(Long attemptId, String username) {
@@ -164,10 +186,47 @@ public class AttemptService {
         return attempt;
     }
 
+    private void validateExamIsActive(Exam exam) {
+        if (exam.getStatus() != null && exam.getStatus() != com.ots.enums.TestStatus.ACTIVE) {
+            throw new BadRequestException("Exam is not active");
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        if (exam.getStartTime() != null && exam.getStartTime().isAfter(now)) {
+            throw new BadRequestException("Exam has not started yet");
+        }
+        if (exam.getEndTime() != null && exam.getEndTime().isBefore(now)) {
+            throw new BadRequestException("Exam has already ended");
+        }
+    }
+
     private boolean evaluateAnswer(AttemptAnswer ans, Question q) {
         if (q.getQuestionType() == QuestionType.CODING) {
-            // Text answers require manual grading – not auto-graded
-            return false;
+            if (ans.getTextAnswer() == null || ans.getTextAnswer().isBlank()) return false;
+            
+            // Map Language
+            String lang = ans.getCodeLanguage() != null ? ans.getCodeLanguage() : "java";
+            
+            // Map Test Cases
+            List<com.ots.dto.request.CodeRunRequest.TestCaseInput> testCases = q.getTestCases().stream()
+                    .map(tc -> com.ots.dto.request.CodeRunRequest.TestCaseInput.builder()
+                            .input(tc.getInput())
+                            .expectedOutput(tc.getExpectedOutput())
+                            .build())
+                    .collect(Collectors.toList());
+
+            com.ots.dto.request.CodeRunRequest runRequest = com.ots.dto.request.CodeRunRequest.builder()
+                    .code(ans.getTextAnswer())
+                    .language(lang)
+                    .testCases(testCases)
+                    .build();
+
+            try {
+                com.ots.dto.response.CodeRunResponse res = codeRunnerService.run(runRequest);
+                return res.isAllPassed();
+            } catch (Exception e) {
+                return false;
+            }
         }
         if (ans.getSelectedOptionIds() == null || ans.getSelectedOptionIds().isBlank()) return false;
 

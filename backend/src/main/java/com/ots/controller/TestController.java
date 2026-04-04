@@ -27,6 +27,6 @@ public class TestController {
     @GetMapping("/{id}")
     @Operation(summary = "Get test details (sections + questions, WITHOUT correct answers)")
     public ResponseEntity<ExamResponse> getTestDetails(@PathVariable Long id) {
-        return ResponseEntity.ok(examService.getExamById(id, true));
+        return ResponseEntity.ok(examService.getExamForStudent(id));
     }
 }

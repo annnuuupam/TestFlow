@@ -2,6 +2,8 @@ package com.ots.dto.response;
 
 import lombok.Builder;
 import lombok.Data;
+import java.util.List;
+import java.util.Map;
 
 @Data
 @Builder
@@ -15,4 +17,25 @@ public class AnalyticsResponse {
     private Long completedAttempts;
     private Double averageScore;
     private Long totalQuestions;
+
+    // Advanced Metrics
+    private List<TrendPoint> attemptTrends;
+    private Map<String, Long> categoryDistribution;
+    private List<RecentActivity> recentActivities;
+
+    @Data
+    @Builder
+    public static class TrendPoint {
+        private String label; // e.g., "Jan", "Feb"
+        private Long count;
+        private Double avgScore;
+    }
+
+    @Data
+    @Builder
+    public static class RecentActivity {
+        private String message;
+        private String time;
+        private String type; // USER_JOINED, TEST_SUBMITTED, etc.
+    }
 }

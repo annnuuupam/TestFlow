@@ -40,10 +40,18 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/announcements").permitAll()
                 // Admin-only endpoints
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                // Problems: GET for all authenticated; POST/DELETE admin only (also enforced via @PreAuthorize)
+                .requestMatchers(HttpMethod.GET, "/api/problems/**").authenticated()
+                .requestMatchers(HttpMethod.POST, "/api/problems/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.DELETE, "/api/problems/**").hasRole("ADMIN")
+                // Submissions: authenticated users
+                .requestMatchers("/api/submissions/**").authenticated()
                 // Student + Admin endpoints
                 .requestMatchers("/api/tests/**").hasAnyRole("STUDENT", "ADMIN")
                 .requestMatchers("/api/attempts/**").hasAnyRole("STUDENT", "ADMIN")
                 .requestMatchers("/api/leaderboard/**").hasAnyRole("STUDENT", "ADMIN")
+                // Code runner - available to admin and student
+                .requestMatchers("/api/code/**").authenticated()
                 .requestMatchers("/api/users/me").authenticated()
                 .anyRequest().authenticated()
             )

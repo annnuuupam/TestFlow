@@ -13,7 +13,6 @@ services:
       - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./backend/src/main/resources/schema.sql:/docker-entrypoint-initdb.d/schema.sql
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       timeout: 20s
@@ -25,27 +24,60 @@ services:
     ports:
       - "8080:8080"
     environment:
+      # Data Logic
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/ots_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
       SPRING_DATASOURCE_USERNAME: ots_user
       SPRING_DATASOURCE_PASSWORD: ots_password
+      # Security
       JWT_SECRET: c2VjcmV0a2V5Zm9yb25saW5ldGVzdHN5c3RlbTIwMjRqd3Rfc2VjcmV0a2V5X3N0cmluZw==
       JWT_EXPIRATION: 86400000
+      # Code Execution Engine (Industry Strategy)
+      APP_CODE_RUNNER_STRATEGY: judge0
+      JUDGE0_API_URL: http://judge0:2358
+      # Frontend Integration
       FRONTEND_URL: http://localhost:5173
     depends_on:
       mysql:
         condition: service_healthy
+      judge0:
+        condition: service_started
     restart: unless-stopped
 
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      args:
+        VITE_API_BASE_URL: http://localhost:8080/api
     container_name: ots-frontend
     ports:
       - "80:80"
-    environment:
-      VITE_API_BASE_URL: http://localhost:8080
     depends_on:
       - backend
     restart: unless-stopped
+
+  # Core Execution Engines
+  judge0:
+    image: judge0/judge0:latest
+    container_name: ots-judge0
+    volumes:
+      - ./judge0.conf:/judge0.conf:ro
+    ports:
+      - "2358:2358"
+    depends_on:
+      - redis
+      - db-judge0
+
+  redis:
+    image: redis:6.0
+    container_name: ots-redis
+
+  db-judge0:
+    image: postgres:13
+    container_name: ots-db-judge0
+    environment:
+      POSTGRES_DB: judge0
+      POSTGRES_USER: judge0
+      POSTGRES_PASSWORD: judge0password
 
 volumes:
   mysql_data:

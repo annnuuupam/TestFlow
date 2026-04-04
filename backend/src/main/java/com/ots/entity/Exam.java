@@ -57,6 +57,9 @@ public class Exam {
     @Column(name = "end_time")
     private LocalDateTime endTime;
 
+    @Column(length = 200)
+    private String category;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     @Builder.Default

@@ -9,6 +9,7 @@ export const attemptApi = {
     questionId: number
     selectedOptionIds?: number[]
     textAnswer?: string
+    codeLanguage?: string
     markedForReview?: boolean
   }) => api.put(`/attempts/${attemptId}/answer`, data),
 
