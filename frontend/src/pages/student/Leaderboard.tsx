@@ -19,22 +19,32 @@ export default function StudentLeaderboard() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    leaderboardApi.getByExam(Number(examId)).then(setEntries).finally(() => setLoading(false))
+    setLoading(true);
+    if (examId === 'all') {
+      leaderboardApi.getGlobal()
+        .then(setEntries)
+        .finally(() => setLoading(false));
+    } else {
+      leaderboardApi.getByExam(Number(examId))
+        .then(setEntries)
+        .finally(() => setLoading(false));
+    }
   }, [examId])
 
   const myEntry = entries.find(e => e.username === username)
+  const isGlobal = examId === 'all';
 
   return (
     <div className="max-w-2xl mx-auto space-y-5">
       <div className="page-header flex items-center gap-4">
-        <Link to="/student/results" className="text-muted-foreground hover:text-foreground transition-colors">
+        <Link to={isGlobal ? "/student" : "/student/results"} className="text-muted-foreground hover:text-foreground transition-colors">
           <ArrowLeft size={20} />
         </Link>
         <div>
           <h1 className="page-title flex items-center gap-2">
-            <Trophy size={22} className="text-yellow-400" /> Leaderboard
+            <Trophy size={22} className="text-yellow-400" /> {isGlobal ? 'Global Leaderboard' : 'Leaderboard'}
           </h1>
-          <p className="page-subtitle">Top performers for this exam</p>
+          <p className="page-subtitle">{isGlobal ? 'Top performers across the platform' : 'Top performers for this exam'}</p>
         </div>
       </div>
 

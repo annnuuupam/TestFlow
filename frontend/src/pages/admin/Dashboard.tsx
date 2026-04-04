@@ -7,7 +7,7 @@ import { formatRelative } from '@/utils'
 import {
   Users, BookOpen, ClipboardCheck, TrendingUp,
   PlusCircle, ArrowRight, Activity, Target, Award,
-  Clock, CheckCircle2, AlertCircle
+  Clock, CheckCircle2, AlertCircle, Flame
 } from 'lucide-react'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -86,10 +86,10 @@ export default function AdminDashboard() {
           Array.from({ length: 4 }).map((_, i) => <div key={i} className="stat-card skeleton h-40 rounded-3xl" />)
         ) : analytics ? (
           <>
-            <StatCard icon={Users}         label="Total Candidates" value={analytics.totalStudents}  color="bg-primary"       sub="Active in last 24h" />
-            <StatCard icon={BookOpen}      label="Live Exams"       value={analytics.activeExams}    color="bg-indigo-500"    sub={`${analytics.totalExams} total exams`} />
-            <StatCard icon={ClipboardCheck} label="Submissions"     value={analytics.totalAttempts}  color="bg-emerald-500"   sub={`${analytics.completedAttempts} graded`} />
-            <StatCard icon={Target}        label="Average Grade"    value={`${analytics.averageScore}%`} color="bg-amber-500" sub="Industry parity" />
+            <StatCard icon={Users}         label="Active Today"     value={analytics.activeUsersToday}  color="bg-primary"       sub="Students online" />
+            <StatCard icon={Flame}         label="Average Streak"   value={analytics.averageStreak}     color="bg-orange-500"    sub="Consistency score" />
+            <StatCard icon={TrendingUp}    label="Top Streak"       value={analytics.topStreak}        color="bg-emerald-500"   sub="Days record" />
+            <StatCard icon={Target}        label="Average Grade"    value={`${analytics.averageScore}%`} color="bg-indigo-500"    sub="Platform parity" />
           </>
         ) : null}
       </div>

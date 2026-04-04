@@ -44,7 +44,7 @@ export default function StudentResults() {
 
   return (
     <div className="space-y-8 pb-12">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="no-print flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-extrabold tracking-tight">Performance Reports</h1>
           <p className="text-muted-foreground">Detailed analysis of your assessment history</p>
@@ -54,9 +54,28 @@ export default function StudentResults() {
         </Link>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
+      {/* Print-Only Professional Header */}
+      <div className="hidden print:block mb-10 border-b-2 border-primary pb-8 text-center uppercase">
+        <h1 className="text-4xl font-black tracking-[0.3em] text-foreground">
+          TEST<span className="text-primary">FLOW</span>
+        </h1>
+        <p className="text-[12px] font-black tracking-[0.5em] text-primary mt-2">Global Assessment Certification</p>
+        
+        <div className="mt-12 grid grid-cols-2 text-left gap-10 normal-case border-t border-b border-border py-6 items-center">
+          <div className="space-y-1">
+            <p className="text-[10px] font-black text-muted-foreground tracking-widest uppercase">Candidate Name</p>
+            <p className="text-lg font-bold">{location.state?.fullName || 'Official Platform Member'}</p>
+          </div>
+          <div className="space-y-1 text-right">
+            <p className="text-[10px] font-black text-muted-foreground tracking-widest uppercase">Examination Date</p>
+            <p className="text-lg font-bold">{formatDateTime(selected?.endTime || new Date().toISOString())}</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 print:block">
         {/* Left: Attempt Timeline */}
-        <div className="xl:col-span-4 space-y-4">
+        <div className="xl:col-span-4 space-y-4 no-print">
           <div className="glass-card overflow-hidden flex flex-col h-[700px]">
             <div className="p-5 border-b border-border bg-muted/30 flex items-center justify-between">
               <h3 className="text-sm font-bold flex items-center gap-2">
@@ -106,9 +125,9 @@ export default function StudentResults() {
         </div>
 
         {/* Right: Detailed Analysis */}
-        <div className="xl:col-span-8 space-y-6">
+        <div className="xl:col-span-8 space-y-6 print:w-full print:p-0">
           {!selected ? (
-            <div className="glass-card h-full p-20 flex flex-col items-center justify-center text-center">
+            <div className="glass-card h-full p-20 flex flex-col items-center justify-center text-center no-print">
               <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center mb-6">
                 <Target size={40} className="text-muted-foreground opacity-20" />
               </div>
@@ -120,11 +139,11 @@ export default function StudentResults() {
           ) : (
             <>
               {/* Header Stats */}
-              <div className={`glass-card p-8 border-t-4 shadow-2xl shadow-current/5 overflow-hidden relative ${
+              <div className={`glass-card p-8 border-t-4 shadow-2xl shadow-current/5 overflow-hidden relative print:border-2 print:shadow-none ${
                 selected.passed ? 'border-t-emerald-500 bg-emerald-500/[0.02]' : 'border-t-red-500 bg-red-500/[0.02]'
               }`}>
                 {/* Decorative background icon */}
-                <Trophy size={200} className={`absolute -right-20 -bottom-20 opacity-[0.03] ${selected.passed ? 'text-emerald-500' : 'text-red-500'}`} />
+                <Trophy size={200} className={`absolute -right-20 -bottom-20 opacity-[0.03] ${selected.passed ? 'text-emerald-500' : 'text-red-500'} print:hidden`} />
 
                 <div className="relative z-10">
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
@@ -304,7 +323,7 @@ export default function StudentResults() {
               )}
 
               {/* Action Buttons */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4">
+              <div className="no-print grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4">
                 <button 
                   onClick={() => window.print()}
                   className="p-4 rounded-2xl border-2 border-border text-sm font-bold flex items-center justify-center gap-2 hover:bg-secondary transition-all"
@@ -319,10 +338,36 @@ export default function StudentResults() {
                   <Trophy size={18} /> Hall of Fame
                 </Link>
               </div>
+
+              {/* Print-Only Signature & Verification Section */}
+              <div className="hidden print:grid grid-cols-2 gap-20 mt-20 pt-10 border-t border-dashed border-muted-foreground/30 text-center">
+                <div className="space-y-4">
+                  <div className="h-20 flex items-end justify-center border-b border-muted-foreground/40">
+                    <p className="text-sm italic text-muted-foreground opacity-50 mb-2 font-serif">Electronic Verification Active</p>
+                  </div>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Authorized Signature</p>
+                </div>
+                <div className="space-y-4">
+                  <div className="h-20 flex items-end justify-center border-b border-muted-foreground/40" />
+                  <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Candidate Signature</p>
+                </div>
+              </div>
+
+              <div className="hidden print:flex flex-col items-center justify-center mt-12 gap-4">
+                <div className="w-16 h-16 bg-slate-100 border border-slate-300 flex items-center justify-center p-1 rounded-sm opacity-60">
+                   <div className="grid grid-cols-3 grid-rows-3 gap-0.5 w-full h-full">
+                      {[1,2,3,4,5,6,7,8,9].map(i => <div key={i} className={`bg-slate-${i % 2 === 0 ? '950' : '400'}`} />)}
+                   </div>
+                </div>
+                <div className="text-center">
+                  <p className="text-[9px] font-mono text-muted-foreground uppercase">Report Verification ID: TF-{Math.random().toString(36).substring(2, 10).toUpperCase()}-{selected.id}</p>
+                  <p className="text-[8px] italic text-muted-foreground/60 mt-1">Visit testflow.io/verify to validate this credential.</p>
+                </div>
+              </div>
             </>
           )}
         </div>
       </div>
     </div>
-  )
+  );
 }

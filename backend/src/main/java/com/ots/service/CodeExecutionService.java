@@ -22,6 +22,7 @@ public class CodeExecutionService {
 
     private final SubmissionRepository submissionRepository;
     private final CodeRunnerService codeRunnerService;
+    private final EngagementService engagementService;
 
     @Async
     @Transactional
@@ -32,10 +33,15 @@ public class CodeExecutionService {
             Submission submission = submissionRepository.findById(submissionId)
                     .orElseThrow(() -> new IllegalArgumentException("Submission not found"));
 
+            Long userId = submission.getUser().getId();
+            // Record activity immediately (submission attempt)
+            engagementService.recordActivity(userId, false);
+
             List<TestCase> testCases = submission.getProblem().getTestCases();
             
             if (testCases == null || testCases.isEmpty()) {
                 submission.setStatus(SubmissionStatus.ACCEPTED);
+                engagementService.recordActivity(userId, true);
                 submission.setExecutionTime(0.01);
                 submission.setMemoryUsed(8);
                 submissionRepository.save(submission);
@@ -61,6 +67,7 @@ public class CodeExecutionService {
                 submission.setErrorMessage(result.getCompileError());
             } else if (result.isAllPassed()) {
                 submission.setStatus(SubmissionStatus.ACCEPTED);
+                engagementService.recordActivity(userId, true);
             } else {
                 // Find first non-passing case and set status
                 CodeRunResponse.TestCaseResult failed = result.getResults().stream()

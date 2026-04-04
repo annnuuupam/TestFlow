@@ -140,6 +140,40 @@ export interface LeaderboardEntry {
   passed: boolean
 }
 
+export interface ProfileResponse {
+  userId: number;
+  username: string;
+  fullName: string;
+  email: string;
+  bio?: string;
+  profilePicture?: string;
+  skills: string[];
+  githubUrl?: string;
+  linkedinUrl?: string;
+  twitterUrl?: string;
+  currentStreak: number;
+  maxStreak: number;
+  totalSolved: number;
+  totalSubmissions: number;
+  accuracy: number;
+  lastActiveDate?: string;
+  badges: BadgeResponse[];
+}
+
+export interface BadgeResponse {
+  id: number;
+  name: string;
+  description: string;
+  iconUrl?: string;
+  isEarned: boolean;
+  awardedAt?: string;
+}
+
+export interface ActivityPoint {
+  date: string;
+  count: number;
+}
+
 // Analytics
 export interface Analytics {
   totalUsers: number
@@ -151,6 +185,9 @@ export interface Analytics {
   completedAttempts: number
   averageScore: number
   totalQuestions: number
+  activeUsersToday: number
+  averageStreak: number
+  topStreak: number
   attemptTrends?: TrendPoint[]
   categoryDistribution?: Record<string, number>
   recentActivities?: RecentActivity[]

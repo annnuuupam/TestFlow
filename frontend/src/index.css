@@ -81,6 +81,29 @@
   }
 }
 
+@media print {
+  .bg-primary {
+    background-color: #2563eb !important;
+    color: white !important;
+  }
+
+  .text-primary {
+    color: #2563eb !important;
+  }
+
+  /* Force expanded state for questions in print */
+  .glass-card > div:last-child {
+    display: block !important;
+    opacity: 1 !important;
+    height: auto !important;
+  }
+
+  * {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
 @layer components {
   /* Glass morphism card */
   .glass-card {

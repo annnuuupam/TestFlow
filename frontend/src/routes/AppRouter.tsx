@@ -1,3 +1,4 @@
+import React from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuthStore } from '@/store/useAuthStore'
 
@@ -26,9 +27,17 @@ import StudentDashboard from '@/pages/student/Dashboard'
 import StudentTestList from '@/pages/student/TestList'
 import StudentTestAttempt from '@/pages/student/TestAttempt'
 import StudentResults from '@/pages/student/Results'
+import StudentProfile from '@/pages/student/Profile'
 import StudentLeaderboard from '@/pages/student/Leaderboard'
 import ProblemList from '@/pages/student/ProblemList'
 import ProblemSolving from '@/pages/student/ProblemSolving'
+
+// Static pages
+import HelpCenter from '@/pages/static/HelpCenter'
+import StudentGuide from '@/pages/static/StudentGuide'
+import PrivacyPolicy from '@/pages/static/PrivacyPolicy'
+import TermsConditions from '@/pages/static/Terms'
+import NotFound from '@/pages/NotFound'
 
 function RequireAuth({ children, role }: { children: React.ReactNode; role?: 'ADMIN' | 'STUDENT' }) {
   const { isAuthenticated, role: userRole } = useAuthStore()
@@ -42,10 +51,18 @@ export default function AppRouter() {
 
   return (
     <Routes>
-      {/* Public routes */}
+      {/* Public Auth routes */}
       <Route element={<AuthLayout />}>
         <Route path="/login"    element={isAuthenticated ? <Navigate to={role === 'ADMIN' ? '/admin' : '/student'} /> : <Login />} />
         <Route path="/register" element={isAuthenticated ? <Navigate to={role === 'ADMIN' ? '/admin' : '/student'} /> : <Register />} />
+      </Route>
+
+      {/* Public Info routes (inside StudentLayout for Navbar/Footer but without RequireAuth) */}
+      <Route element={<StudentLayout />}>
+        <Route path="/help"      element={<HelpCenter />} />
+        <Route path="/guide"     element={<StudentGuide />} />
+        <Route path="/privacy"   element={<PrivacyPolicy />} />
+        <Route path="/terms"     element={<TermsConditions />} />
       </Route>
 
       {/* Admin routes */}
@@ -68,18 +85,19 @@ export default function AppRouter() {
         <Route path="/student/tests"              element={<StudentTestList />} />
         <Route path="/student/tests/:id/attempt"  element={<StudentTestAttempt />} />
         <Route path="/student/results"            element={<StudentResults />} />
+        <Route path="/student/profile"            element={<StudentProfile />} />
         <Route path="/student/leaderboard/:examId" element={<StudentLeaderboard />} />
         <Route path="/student/problems"           element={<ProblemList />} />
         <Route path="/student/problems/:id"       element={<ProblemSolving />} />
       </Route>
 
-      {/* Default redirect */}
+      {/* Default redirect & 404 */}
       <Route path="/" element={
         isAuthenticated
           ? <Navigate to={role === 'ADMIN' ? '/admin' : '/student'} />
           : <Navigate to="/login" />
       } />
-      <Route path="*" element={<Navigate to="/" />} />
+      <Route path="*" element={<NotFound />} />
     </Routes>
   )
 }

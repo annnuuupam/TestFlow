@@ -43,4 +43,26 @@ public class LeaderboardService {
 
         return entries;
     }
+
+    public List<LeaderboardEntry> getGlobalLeaderboard() {
+        List<TestAttempt> topAttempts = attemptRepository.findGlobalLeaderboard();
+        List<LeaderboardEntry> entries = new ArrayList<>();
+
+        for (int i = 0; i < topAttempts.size(); i++) {
+            TestAttempt attempt = topAttempts.get(i);
+            entries.add(LeaderboardEntry.builder()
+                    .rank(i + 1)
+                    .userId(attempt.getUser().getId())
+                    .username(attempt.getUser().getUsername())
+                    .fullName(attempt.getUser().getFullName())
+                    .score(attempt.getScore())
+                    .totalMarks(attempt.getTotalMarks())
+                    .percentage(attempt.getPercentage())
+                    .timeTakenSeconds(attempt.getTimeTakenSeconds())
+                    .passed(attempt.getPercentage() >= attempt.getExam().getPassingMarks())
+                    .build());
+        }
+
+        return entries;
+    }
 }

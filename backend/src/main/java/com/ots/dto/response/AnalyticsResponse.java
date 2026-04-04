@@ -17,6 +17,9 @@ public class AnalyticsResponse {
     private Long completedAttempts;
     private Double averageScore;
     private Long totalQuestions;
+    private Integer activeUsersToday;
+    private Double averageStreak;
+    private Integer topStreak;
 
     // Advanced Metrics
     private List<TrendPoint> attemptTrends;

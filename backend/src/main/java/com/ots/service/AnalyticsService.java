@@ -22,6 +22,8 @@ public class AnalyticsService {
     private final ExamRepository examRepository;
     private final TestAttemptRepository attemptRepository;
     private final QuestionRepository questionRepository;
+    private final UserProfileRepository profileRepository;
+    private final UserActivityRepository activityRepository;
 
     public AnalyticsResponse getOverview() {
         long totalUsers = userRepository.count();
@@ -33,6 +35,21 @@ public class AnalyticsService {
         long completedAttempts = attemptRepository.countByStatus(AttemptStatus.SUBMITTED);
         long totalQuestions = questionRepository.count();
 
+        // Engagement Analytics
+        List<com.ots.entity.UserProfile> allProfiles = profileRepository.findAll();
+        double avgStreak = allProfiles.stream()
+                .mapToInt(p -> p.getCurrentStreak())
+                .average()
+                .orElse(0.0);
+        int topStreak = allProfiles.stream()
+                .mapToInt(p -> p.getMaxStreak())
+                .max()
+                .orElse(0);
+        
+        int activeToday = (int) activityRepository.findAll().stream()
+                .filter(a -> a.getActivityDate().equals(java.time.LocalDate.now()))
+                .count();
+
         // Average score of completed attempts
         double avgScore = attemptRepository.findAll().stream()
                 .filter(a -> a.getStatus() == AttemptStatus.SUBMITTED && a.getTotalMarks() > 0)
@@ -40,7 +57,7 @@ public class AnalyticsService {
                 .average()
                 .orElse(0.0);
 
-        // Trends (Historical summary for dashboard visualization)
+        // Trends
         List<AnalyticsResponse.TrendPoint> trends = List.of(
                 AnalyticsResponse.TrendPoint.builder().label("Jan").count(12L).avgScore(65.0).build(),
                 AnalyticsResponse.TrendPoint.builder().label("Feb").count(18L).avgScore(72.0).build(),
@@ -48,14 +65,12 @@ public class AnalyticsService {
                 AnalyticsResponse.TrendPoint.builder().label("Apr").count(totalAttempts).avgScore(avgScore).build()
         );
 
-        // Category distribution from exams
         Map<String, Long> dist = new HashMap<>();
         examRepository.findAll().forEach(e -> {
             String cat = e.getCategory() == null || e.getCategory().isBlank() ? "General" : e.getCategory();
             dist.put(cat, dist.getOrDefault(cat, 0L) + 1);
         });
 
-        // Recent activity
         List<AnalyticsResponse.RecentActivity> activities = new ArrayList<>();
         attemptRepository.findAll().stream()
                 .sorted((a, b) -> b.getStartTime().compareTo(a.getStartTime()))
@@ -78,6 +93,9 @@ public class AnalyticsService {
                 .completedAttempts(completedAttempts)
                 .averageScore(Math.round(avgScore * 100.0) / 100.0)
                 .totalQuestions(totalQuestions)
+                .activeUsersToday(activeToday)
+                .averageStreak(Math.round(avgStreak * 10.0) / 10.0)
+                .topStreak(topStreak)
                 .attemptTrends(trends)
                 .categoryDistribution(dist)
                 .recentActivities(activities)

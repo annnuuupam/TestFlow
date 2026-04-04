@@ -26,4 +26,10 @@ public class LeaderboardController {
     public ResponseEntity<List<LeaderboardEntry>> getLeaderboard(@PathVariable Long examId) {
         return ResponseEntity.ok(leaderboardService.getLeaderboard(examId));
     }
+
+    @GetMapping("/global")
+    @Operation(summary = "Get ranked leaderboard for all exams")
+    public ResponseEntity<List<LeaderboardEntry>> getGlobalLeaderboard() {
+        return ResponseEntity.ok(leaderboardService.getGlobalLeaderboard());
+    }
 }
