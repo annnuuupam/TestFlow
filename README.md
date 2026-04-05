@@ -217,7 +217,7 @@ UPDATE users SET role = 'ADMIN' WHERE username = 'admin';
 
 ## 👨‍💻 Developer
 
-**Anupam Kumar** — CSE @ VTU  
+**Anupam Kumar**  
 - [GitHub](https://github.com/annnuuupam)
 - [LinkedIn](https://www.linkedin.com/in/anupam3062/)
 - [Email](mailto:anupamkumar3062@gmail.com)
