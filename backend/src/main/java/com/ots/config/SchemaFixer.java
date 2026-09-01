@@ -26,5 +26,13 @@ public class SchemaFixer {
             System.err.println("ℹ️ SchemaFixer Tip: If adding a coding question still fails, " +
                                "manually run 'ALTER TABLE test_cases MODIFY problem_id BIGINT NULL' in your MySQL workbench.");
         }
+        try {
+            // Allow NULL for section_id in questions -> supports the standalone Question Bank
+            jdbcTemplate.execute("ALTER TABLE questions MODIFY section_id BIGINT NULL;");
+            System.out.println("✅ SchemaFixer: Successfully set questions.section_id to NULLABLE (Question Bank)");
+        } catch (Exception e) {
+            System.err.println("ℹ️ SchemaFixer Tip: If the question bank fails, " +
+                               "manually run 'ALTER TABLE questions MODIFY section_id BIGINT NULL' in your MySQL workbench.");
+        }
     }
 }

@@ -3,10 +3,13 @@ package com.ots.service;
 import com.ots.dto.request.ProblemRequest;
 import com.ots.dto.response.ProblemResponse;
 import com.ots.dto.response.TestCaseResponse;
+import com.ots.entity.Contest;
 import com.ots.entity.Problem;
 import com.ots.entity.TestCase;
 import com.ots.exception.ResourceNotFoundException;
+import com.ots.repository.ContestRepository;
 import com.ots.repository.ProblemRepository;
+import com.ots.repository.SubmissionRepository;
 import com.ots.repository.TestCaseRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -23,6 +26,8 @@ public class ProblemService {
 
     private final ProblemRepository problemRepository;
     private final TestCaseRepository testCaseRepository;
+    private final SubmissionRepository submissionRepository;
+    private final ContestRepository contestRepository;
 
     @Transactional
     public ProblemResponse createProblem(ProblemRequest request) {
@@ -70,6 +75,17 @@ public class ProblemService {
     public void deleteProblem(Long id) {
         Problem problem = problemRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Problem", id));
+
+        // Remove the problem from any contests that reference it
+        for (Contest contest : contestRepository.findByProblemsId(id)) {
+            contest.getProblems().removeIf(p -> p.getId().equals(id));
+            contestRepository.save(contest);
+        }
+
+        // Delete dependent rows before the problem itself (FK constraints)
+        submissionRepository.deleteByProblemId(id);
+        testCaseRepository.deleteByProblemId(id);
+        problem.setTestCases(new java.util.ArrayList<>());
         problemRepository.delete(problem);
     }
 

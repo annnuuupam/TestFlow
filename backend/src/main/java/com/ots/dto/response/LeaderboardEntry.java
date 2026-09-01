@@ -15,4 +15,5 @@ public class LeaderboardEntry {
     private Double percentage;
     private Integer timeTakenSeconds;
     private Boolean passed;
+    private String examTitle;
 }

@@ -15,7 +15,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class QuestionRequest {
-    @NotNull(message = "Section ID is required")
+    // Null for question-bank questions, required for questions attached to an exam section
     private Long sectionId;
 
     @NotBlank(message = "Question text is required")
@@ -67,7 +67,8 @@ public class QuestionRequest {
     public static class TestCaseRequest {
         private String input;
         private String expectedOutput;
-        
+
+        @com.fasterxml.jackson.annotation.JsonProperty("isHidden")
         @Builder.Default
         private boolean isHidden = false;
     }

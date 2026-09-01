@@ -21,7 +21,7 @@ public class Question {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "section_id", nullable = false)
+    @JoinColumn(name = "section_id", nullable = true)
     private Section section;
 
     @Column(name = "question_text", nullable = false, columnDefinition = "TEXT")

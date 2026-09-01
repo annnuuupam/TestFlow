@@ -14,4 +14,6 @@ public interface UserProfileRepository extends JpaRepository<UserProfile, Long> 
     @Modifying
     @Query("UPDATE UserProfile up SET up.currentStreak = 0 WHERE up.lastActiveDate < :cutoffDate")
     int resetOldStreaks(@Param("cutoffDate") LocalDate cutoffDate);
+
+    void deleteByUserId(Long userId);
 }

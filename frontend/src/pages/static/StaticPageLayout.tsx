@@ -10,17 +10,15 @@ interface StaticPageLayoutProps {
 
 const StaticPageLayout: React.FC<StaticPageLayoutProps> = ({ title, subtitle, children, icon }) => {
   return (
-    <div className="min-h-[70vh] py-12 animate-in fade-in duration-700">
+    <div className="min-h-[70vh] py-12 animate-fade-in">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        
-        {/* Header Section */}
-        <div className="text-center mb-16 space-y-4">
+        <div className="text-center mb-12 space-y-4">
           {icon && (
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 text-primary mb-2 shadow-xl shadow-primary/5 border border-primary/20">
+            <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-primary/10 text-primary mb-2 border border-primary/20">
               {icon}
             </div>
           )}
-          <h1 className="text-4xl md:text-5xl font-black tracking-tight text-foreground">
+          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-foreground">
             {title}
           </h1>
           {subtitle && (
@@ -28,28 +26,22 @@ const StaticPageLayout: React.FC<StaticPageLayoutProps> = ({ title, subtitle, ch
               {subtitle}
             </p>
           )}
-          <div className="w-24 h-1.5 bg-gradient-to-r from-primary to-accent mx-auto rounded-full mt-8 shadow-lg shadow-primary/20"></div>
+          <div className="w-20 h-1 bg-gradient-to-r from-primary to-accent mx-auto rounded-full mt-6" />
         </div>
 
-        {/* Content Section */}
-        <div className={cn(
-          "bg-card border border-border p-8 md:p-12 rounded-3xl shadow-2xl shadow-black/5",
-          "prose prose-slate dark:prose-invert max-w-none transition-colors duration-300"
-        )}>
+        <div className={cn('bg-card border border-border p-8 md:p-12 rounded-2xl shadow-soft')}>
           {children}
         </div>
 
-        {/* Support Section */}
-        <div className="mt-16 text-center">
+        <div className="mt-14 text-center">
           <p className="text-sm text-muted-foreground mb-4">Still have questions? We're here to help.</p>
-          <a 
-            href="mailto:support@testflow.io" 
-            className="inline-flex items-center gap-2 px-6 py-3 bg-secondary hover:bg-secondary/80 text-foreground font-bold rounded-2xl border border-border transition-all hover:scale-105"
+          <a
+            href="mailto:support@testflow.io"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-secondary text-foreground font-semibold border border-border hover:bg-secondary/80 transition-all"
           >
             Contact Support Team
           </a>
         </div>
-
       </div>
     </div>
   );

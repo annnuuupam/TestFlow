@@ -23,6 +23,7 @@ public class ExamResponse {
     private TestStatus status;
     private Boolean isRandomized;
     private Integer maxAttempts;
+    private String category;
     private String createdBy;
     private LocalDateTime createdAt;
     private Integer totalQuestions;

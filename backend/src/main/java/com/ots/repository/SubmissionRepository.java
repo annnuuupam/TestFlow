@@ -10,4 +10,6 @@ import java.util.List;
 public interface SubmissionRepository extends JpaRepository<Submission, Long> {
     List<Submission> findByUserId(Long userId);
     List<Submission> findByUserIdAndProblemId(Long userId, Long problemId);
+    void deleteByProblemId(Long problemId);
+    void deleteByUserId(Long userId);
 }

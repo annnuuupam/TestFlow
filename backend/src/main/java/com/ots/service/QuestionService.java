@@ -39,8 +39,11 @@ public class QuestionService {
 
     @Transactional
     public QuestionResponse createQuestion(QuestionRequest request) {
-        Section section = sectionRepository.findById(request.getSectionId())
-                .orElseThrow(() -> new ResourceNotFoundException("Section", request.getSectionId()));
+        Section section = null;
+        if (request.getSectionId() != null) {
+            section = sectionRepository.findById(request.getSectionId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Section", request.getSectionId()));
+        }
 
         Question question = Question.builder()
                 .section(section)
@@ -85,7 +88,92 @@ public class QuestionService {
             }
         }
 
+        if (section != null) {
+            examService.recalculateTotalMarks(section.getExam().getId());
+        }
+
         return examService.mapQuestionToResponse(question, true);
+    }
+
+    public List<QuestionResponse> getAllBankQuestions() {
+        return questionRepository.findBySectionIsNullOrderByIdDesc().stream()
+                .map(q -> examService.mapQuestionToResponse(q, true))
+                .collect(Collectors.toList());
+    }
+
+    public QuestionResponse getBankQuestion(Long id) {
+        Question question = questionRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Question", id));
+        if (question.getSection() != null) {
+            throw new ResourceNotFoundException("Question", id);
+        }
+        return examService.mapQuestionToResponse(question, true);
+    }
+
+    /**
+     * Clone one or more question-bank questions into an exam section.
+     * The source questions are copied so later bank edits never affect existing exams.
+     */
+    @Transactional
+    public List<QuestionResponse> importFromBank(Long sectionId, List<Long> questionIds, Integer marks) {
+        Section section = sectionRepository.findById(sectionId)
+                .orElseThrow(() -> new ResourceNotFoundException("Section", sectionId));
+
+        int startOrder = questionRepository.findBySectionIdOrderByDisplayOrder(sectionId).size();
+        List<QuestionResponse> created = new java.util.ArrayList<>();
+        int order = startOrder;
+
+        for (Long qId : questionIds) {
+            Question source = questionRepository.findById(qId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Question", qId));
+
+            Question copy = Question.builder()
+                    .section(section)
+                    .questionText(source.getQuestionText())
+                    .questionType(source.getQuestionType())
+                    .marks(marks != null ? marks : source.getMarks())
+                    .explanation(source.getExplanation())
+                    .difficulty(source.getDifficulty())
+                    .displayOrder(order++)
+                    .boilerplate(source.getBoilerplate())
+                    .constraints(source.getConstraints())
+                    .sampleInput(source.getSampleInput())
+                    .sampleOutput(source.getSampleOutput())
+                    .build();
+            questionRepository.save(copy);
+
+            if (source.getOptions() != null) {
+                int optOrder = 0;
+                for (Option opt : source.getOptions()) {
+                    Option optionCopy = Option.builder()
+                            .question(copy)
+                            .optionText(opt.getOptionText())
+                            .isCorrect(opt.getIsCorrect())
+                            .displayOrder(optOrder++)
+                            .build();
+                    optionRepository.save(optionCopy);
+                    copy.getOptions().add(optionCopy);
+                }
+            }
+
+            if (source.getTestCases() != null) {
+                for (TestCase tc : source.getTestCases()) {
+                    TestCase tcCopy = TestCase.builder()
+                            .question(copy)
+                            .input(tc.getInput())
+                            .expectedOutput(tc.getExpectedOutput())
+                            .isHidden(tc.getIsHidden())
+                            .build();
+                    testCaseRepository.save(tcCopy);
+                    copy.getTestCases().add(tcCopy);
+                }
+            }
+
+            created.add(examService.mapQuestionToResponse(copy, true));
+        }
+
+        examService.recalculateTotalMarks(section.getExam().getId());
+        return created;
     }
 
     @Transactional
@@ -138,15 +226,27 @@ public class QuestionService {
         }
 
         questionRepository.save(question);
+        if (question.getSection() != null) {
+            examService.recalculateTotalMarks(question.getSection().getExam().getId());
+        }
         return examService.mapQuestionToResponse(question, true);
     }
 
     @Transactional
     public void deleteQuestion(Long id) {
-        if (!questionRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Question", id);
-        }
+        Question question = questionRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Question", id));
+
+        Long examId = (question.getSection() != null) ? question.getSection().getExam().getId() : null;
+
         questionRepository.deleteById(id);
+        // flush the removal before recalculating so the cascading merge in
+        // recalculateTotalMarks never sees the deleted question instance
+        questionRepository.flush();
+
+        if (examId != null) {
+            examService.recalculateTotalMarks(examId);
+        }
     }
 
     /**
@@ -156,6 +256,7 @@ public class QuestionService {
     @Transactional
     public int bulkImportFromCsv(MultipartFile file) {
         int count = 0;
+        var touchedSections = new java.util.LinkedHashSet<Long>();
         try (BufferedReader reader = new BufferedReader(
                 new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8));
              CSVParser csvParser = new CSVParser(reader, CSVFormat.DEFAULT.builder()
@@ -167,6 +268,7 @@ public class QuestionService {
 
             for (CSVRecord record : csvParser) {
                 Long sectionId = Long.parseLong(record.get("sectionId"));
+                touchedSections.add(sectionId);
                 String questionText = record.get("questionText");
                 QuestionType type = QuestionType.valueOf(record.get("questionType").toUpperCase());
                 int marks = Integer.parseInt(record.get("marks"));
@@ -210,6 +312,12 @@ public class QuestionService {
                     }
                 }
                 count++;
+            }
+            // Keep affected exams' total marks in sync
+            for (Long sectionId : touchedSections) {
+                Section sec = sectionRepository.findById(sectionId)
+                        .orElseThrow(() -> new ResourceNotFoundException("Section", sectionId));
+                examService.recalculateTotalMarks(sec.getExam().getId());
             }
         } catch (Exception e) {
             throw new RuntimeException("Failed to parse CSV: " + e.getMessage(), e);

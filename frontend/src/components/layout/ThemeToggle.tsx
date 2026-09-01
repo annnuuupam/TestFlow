@@ -10,32 +10,23 @@ const ThemeToggle: React.FC = () => {
     <button
       onClick={toggleTheme}
       className={cn(
-        "relative p-2.5 rounded-xl border transition-all duration-300 group overflow-hidden",
-        "bg-slate-900/50 border-slate-800 hover:border-indigo-500/50",
-        "light:bg-white light:border-slate-200 light:hover:border-indigo-500/50"
+        'relative flex items-center justify-center w-9 h-9 rounded-xl border border-border bg-background',
+        'text-muted-foreground hover:text-foreground hover:border-primary/40 transition-all duration-300',
       )}
       aria-label="Toggle theme"
     >
-      <div className="relative w-5 h-5">
-        <Sun 
-          className={cn(
-            "absolute inset-0 w-5 h-5 transition-all duration-500 transform",
-            theme === 'dark' ? "rotate-90 scale-0 opacity-0" : "rotate-0 scale-100 opacity-100 text-amber-500"
-          )} 
-        />
-        <Moon 
-          className={cn(
-            "absolute inset-0 w-5 h-5 transition-all duration-500 transform",
-            theme === 'dark' ? "rotate-0 scale-100 opacity-100 text-indigo-400" : "-rotate-90 scale-0 opacity-0"
-          )} 
-        />
-      </div>
-      
-      {/* Subtle background glow */}
-      <div className={cn(
-        "absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity",
-        theme === 'dark' ? "bg-indigo-500" : "bg-amber-500"
-      )} />
+      <Sun
+        className={cn(
+          'h-[18px] w-[18px] absolute transition-all duration-500',
+          theme === 'dark' ? 'rotate-90 scale-0 opacity-0' : 'rotate-0 scale-100 opacity-100 text-amber-500',
+        )}
+      />
+      <Moon
+        className={cn(
+          'h-[18px] w-[18px] absolute transition-all duration-500',
+          theme === 'dark' ? 'rotate-0 scale-100 opacity-100 text-primary' : '-rotate-90 scale-0 opacity-0',
+        )}
+      />
     </button>
   );
 };

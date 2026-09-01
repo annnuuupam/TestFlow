@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { Github, Twitter, Linkedin, MessageSquare, ShieldCheck, Mail, Phone, MapPin } from 'lucide-react';
+import { Github, Twitter, Linkedin, ShieldCheck, Mail, MapPin } from 'lucide-react';
 
 const Footer: React.FC = () => {
   const currentYear = new Date().getFullYear();
@@ -27,38 +27,39 @@ const Footer: React.FC = () => {
   ];
 
   return (
-    <footer className="bg-card border-t border-border pt-20 pb-10 mt-auto transition-colors duration-300">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-
-        {/* Main Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-12 mb-16">
-
-          {/* Brand Info */}
-          <div className="lg:col-span-2 space-y-6">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-                <ShieldCheck className="w-5 h-5 text-white" />
+    <footer className="relative border-t border-border bg-background">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-10 mb-12">
+          <div className="lg:col-span-2 space-y-5">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-primary to-accent flex items-center justify-center">
+                <ShieldCheck className="w-4 h-4 text-white" />
               </div>
-              <span className="text-xl font-black tracking-tighter text-foreground">
+              <span className="text-lg font-extrabold tracking-tight text-foreground">
                 TEST<span className="text-primary">FLOW</span>
               </span>
             </div>
-            <p className="text-muted-foreground text-sm leading-relaxed max-w-xs">
-              Empowering the next generation of developers with a state-of-the-art coding assessment platform. Professional-grade testing made simple.
+            <p className="text-sm text-muted-foreground leading-relaxed max-w-xs">
+              Empowering the next generation of developers with a modern coding assessment platform. Professional-grade tests, made simple.
             </p>
-            <div className="flex items-center gap-4">
-              <Github className="w-5 h-5 text-muted-foreground hover:text-foreground transition-colors cursor-pointer" />
-              <Twitter className="w-5 h-5 text-muted-foreground hover:text-foreground transition-colors cursor-pointer" />
-              <Linkedin className="w-5 h-5 text-muted-foreground hover:text-foreground transition-colors cursor-pointer" />
-              <MessageSquare className="w-5 h-5 text-muted-foreground hover:text-foreground transition-colors cursor-pointer" />
+            <div className="flex items-center gap-2">
+              {[
+                { href: 'https://github.com', Icon: Github, label: 'GitHub' },
+                { href: 'https://x.com', Icon: Twitter, label: 'Twitter / X' },
+                { href: 'https://linkedin.com', Icon: Linkedin, label: 'LinkedIn' },
+              ].map(({ href, Icon, label }) => (
+                <a key={label} href={href} target="_blank" rel="noopener noreferrer"
+                  className="w-9 h-9 rounded-xl border border-border flex items-center justify-center text-muted-foreground hover:text-foreground hover:border-primary/40 transition-all" aria-label={label}>
+                  <Icon size={16} />
+                </a>
+              ))}
             </div>
           </div>
 
-          {/* Nav Sections */}
           {sections.map((section) => (
             <div key={section.title} className="lg:col-span-1 space-y-4">
-              <h4 className="text-xs font-black uppercase tracking-widest text-primary">{section.title}</h4>
-              <ul className="space-y-3">
+              <h4 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{section.title}</h4>
+              <ul className="space-y-2.5">
                 {section.links.map((link) => (
                   <li key={link.label}>
                     <NavLink to={link.to} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
@@ -70,35 +71,23 @@ const Footer: React.FC = () => {
             </div>
           ))}
 
-          {/* Contact Info */}
           <div className="lg:col-span-2 space-y-4">
-            <h4 className="text-xs font-black uppercase tracking-widest text-primary">Engage</h4>
+            <h4 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Contact</h4>
             <ul className="space-y-3">
-              <li className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Mail className="w-4 h-4 text-primary" /> support@testflow.io
+              <li className="flex items-center gap-2.5 text-sm text-muted-foreground">
+                <Mail size={15} className="text-primary" /> support@testflow.io
               </li>
-              <li className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Phone className="w-4 h-4 text-primary" /> +1 (800) TEST-PRO
-              </li>
-              <li className="flex items-center gap-2 text-sm text-muted-foreground">
-                <MapPin className="w-4 h-4 text-primary" /> San Francisco, CA
+              <li className="flex items-center gap-2.5 text-sm text-muted-foreground">
+                <MapPin size={15} className="text-primary" /> San Francisco, CA
               </li>
             </ul>
           </div>
         </div>
 
-        {/* Bottom Bar */}
-        <div className="border-t border-border pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
-          <p className="text-xs text-muted-foreground">
-            © {currentYear} TestFlow Global Inc. All rights reserved.
-          </p>
-          <div className="flex items-center gap-6">
-            <span className="text-[10px] uppercase font-bold text-muted-foreground opacity-50">Judge0 Integrated</span>
-            <div className="h-4 w-[1px] bg-border"></div>
-            <p className="text-[10px] text-muted-foreground/60 font-medium">Engineered for Performance</p>
-          </div>
+        <div className="border-t border-border pt-7 flex flex-col md:flex-row justify-between items-center gap-4">
+          <p className="text-xs text-muted-foreground">© {currentYear} TestFlow Inc. All rights reserved.</p>
+          <p className="text-[11px] font-medium text-muted-foreground/70">Engineered for performance · Judge0 integrated</p>
         </div>
-
       </div>
     </footer>
   );

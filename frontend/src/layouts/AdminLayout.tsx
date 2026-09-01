@@ -3,18 +3,19 @@ import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/store/useAuthStore'
 import { cn, getInitials } from '@/utils'
 import ThemeToggle from '@/components/layout/ThemeToggle'
+import NotificationBell from '@/components/layout/NotificationBell'
 import {
-  LayoutDashboard, FileText, HelpCircle, Users, BarChart2,
-  Megaphone, LogOut, Menu, X, ChevronRight, Bell, Code2
+  LayoutDashboard, HelpCircle, Users, BarChart2,
+  Megaphone, LogOut, Menu, Code2, ClipboardList, ChevronLeft
 } from 'lucide-react'
 
 const navItems = [
-  { to: '/admin',               icon: LayoutDashboard, label: 'Dashboard',     exact: true },
-  { to: '/admin/tests',         icon: FileText,        label: 'Tests' },
-  { to: '/admin/questions',     icon: HelpCircle,      label: 'Questions' },
-  { to: '/admin/users',         icon: Users,           label: 'Users' },
+  { to: '/admin',               icon: LayoutDashboard, label: 'Dashboard',    exact: true },
+  { to: '/admin/tests',         icon: ClipboardList,   label: 'Exams' },
+  { to: '/admin/questions',     icon: HelpCircle,      label: 'Question Bank' },
+  { to: '/admin/users',         icon: Users,           label: 'Candidates' },
   { to: '/admin/problems',      icon: Code2,           label: 'Coding Problems' },
-  { to: '/admin/results',       icon: BarChart2,       label: 'Results' },
+  { to: '/admin/results',       icon: BarChart2,       label: 'Analytics' },
   { to: '/admin/announcements', icon: Megaphone,       label: 'Announcements' },
 ]
 
@@ -29,59 +30,57 @@ export default function AdminLayout() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex transition-colors duration-500">
-      {/* Sidebar - Industry Standard Re-integration */}
+    <div className="min-h-screen bg-background flex transition-colors duration-300">
+      {/* Sidebar */}
       <aside className={cn(
-        'flex flex-col h-screen sticky top-0 bg-card border-r border-border transition-all duration-300 shrink-0 z-30 shadow-2xl',
-        sidebarOpen ? 'w-64' : 'w-20'
+        'flex flex-col h-screen sticky top-0 bg-card/70 backdrop-blur-xl border-r border-border transition-all duration-300 shrink-0 z-30',
+        sidebarOpen ? 'w-60' : 'w-[4.5rem]',
       )}>
-        {/* Logo */}
-        <div className="flex items-center gap-3 px-6 py-6 border-b border-border">
-          <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-primary text-white shrink-0 shadow-lg shadow-primary/20">
-            <Code2 size={20} />
+        <div className={cn('flex items-center gap-2.5 px-4 h-[4.5rem] border-b border-border', !sidebarOpen && 'justify-center px-2')}>
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-primary to-accent flex items-center justify-center shrink-0">
+            <Code2 size={18} className="text-white" />
           </div>
           {sidebarOpen && (
-            <span className="font-black text-lg tracking-tighter text-foreground">TEST<span className="text-primary">FLOW</span></span>
+            <span className="font-extrabold text-base tracking-tight text-foreground">TEST<span className="text-primary">FLOW</span></span>
           )}
         </div>
 
-        {/* Nav */}
-        <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
-          {sidebarOpen && (
-            <p className="text-[10px] text-primary font-black px-2 pb-4 uppercase tracking-[0.2em] opacity-60">Management</p>
-          )}
+        <span className={cn('mt-4 px-4 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70', !sidebarOpen && 'sr-only')}>
+          Management
+        </span>
+
+        <nav className="flex-1 px-3 pt-3 space-y-1 overflow-y-auto">
           {navItems.map(({ to, icon: Icon, label, exact }) => (
             <NavLink
               key={to}
               to={to}
               end={exact}
+              title={!sidebarOpen ? label : undefined}
               className={({ isActive }) =>
                 cn(
-                  'flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group',
-                  isActive 
-                    ? 'bg-primary text-white shadow-xl shadow-primary/20' 
+                  'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200',
+                  isActive
+                    ? 'bg-primary/10 text-primary'
                     : 'text-muted-foreground hover:text-foreground hover:bg-secondary',
-                  !sidebarOpen && 'justify-center px-0'
+                  !sidebarOpen && 'justify-center px-2',
                 )
               }
-              title={!sidebarOpen ? label : undefined}
             >
-              <Icon size={20} className={cn("shrink-0", sidebarOpen ? "" : "mx-auto")} />
-              {sidebarOpen && <span className="font-bold text-sm tracking-tight">{label}</span>}
+              <Icon size={18} className="shrink-0" />
+              {sidebarOpen && <span className="truncate">{label}</span>}
             </NavLink>
           ))}
         </nav>
 
-        {/* Logout Section */}
-        <div className="p-4 border-t border-border">
-          <button 
+        <div className="p-3 border-t border-border">
+          <button
             onClick={handleLogout}
             className={cn(
-              "flex items-center gap-3 w-full px-4 py-3 rounded-xl text-red-500 hover:bg-red-500/10 transition-all font-bold text-sm",
-              !sidebarOpen && "justify-center"
+              'flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-500/10 transition-all',
+              !sidebarOpen && 'justify-center px-2',
             )}
           >
-            <LogOut size={20} />
+            <LogOut size={18} />
             {sidebarOpen && <span>Sign Out</span>}
           </button>
         </div>
@@ -89,39 +88,33 @@ export default function AdminLayout() {
 
       {/* Main content */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Top bar */}
-        <header className="h-16 border-b border-border flex items-center gap-4 px-6 bg-background/60 backdrop-blur-md sticky top-0 z-20">
+        <header className="h-16 border-b border-border flex items-center gap-3 px-4 sm:px-6 bg-background/70 backdrop-blur-md sticky top-0 z-20">
           <button
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="text-muted-foreground hover:text-foreground transition-colors p-2 rounded-xl bg-secondary border border-border"
+            onClick={() => setSidebarOpen(o => !o)}
+            className="p-2 rounded-xl border border-border text-muted-foreground hover:text-foreground transition-colors"
           >
-            {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
-          </button>
-          
-          <div className="flex-1" />
-          
-          <ThemeToggle />
-          
-          <button className="relative p-2 text-muted-foreground hover:text-foreground transition-colors">
-            <Bell size={20} />
-            <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-primary rounded-full border-2 border-background"></span>
+            {sidebarOpen ? <ChevronLeft size={18} /> : <Menu size={18} />}
           </button>
 
-          <div className="h-6 w-[1px] bg-border mx-2"></div>
+          <div className="flex-1" />
+
+          <ThemeToggle />
+          <NotificationBell />
+
+          <div className="h-6 w-px bg-border mx-1" />
 
           <div className="flex items-center gap-3">
             <div className="text-right hidden sm:block">
-              <p className="text-sm font-bold text-foreground leading-none">{fullName || username}</p>
-              <p className="text-[10px] text-primary font-black uppercase tracking-widest mt-1 opacity-60">Admin console</p>
+              <p className="text-sm font-semibold text-foreground leading-none">{fullName || username}</p>
+              <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mt-0.5">Admin console</p>
             </div>
-            <div className="w-10 h-10 rounded-xl bg-secondary border border-border flex items-center justify-center text-primary font-bold">
+            <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary font-bold flex items-center justify-center">
               {getInitials(fullName || username || 'A')}
             </div>
           </div>
         </header>
 
-        {/* Page content */}
-        <main className="flex-1 p-8 animate-in fade-in duration-500">
+        <main className="flex-1 p-6 sm:p-8">
           <div className="max-w-7xl mx-auto">
             <Outlet />
           </div>

@@ -85,8 +85,13 @@ export default {
         'slide-in': 'slide-in 0.3s ease-out',
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
-        mono: ['JetBrains Mono', 'Fira Code', 'monospace'],
+        sans: ['Inter', 'ui-sans-serif', 'system-ui', '-apple-system', 'Segoe UI', 'sans-serif'],
+        mono: ['JetBrains Mono', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
+      },
+      boxShadow: {
+        'soft': '0 2px 8px -2px rgb(79 70 229 / 0.08), 0 4px 16px -4px rgb(79 70 229 / 0.06)',
+        'card': '0 1px 2px 0 rgb(0 0 0 / 0.04), 0 2px 8px -1px rgb(0 0 0 / 0.06)',
+        'glow': '0 0 0 1px hsl(var(--ring) / 0.1), 0 8px 30px -6px hsl(var(--ring) / 0.35)',
       },
     },
   },

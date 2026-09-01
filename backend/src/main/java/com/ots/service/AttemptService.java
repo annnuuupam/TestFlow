@@ -49,6 +49,10 @@ public class AttemptService {
                     attemptRepository.delete(activeAttempts.get(i));
                 }
             }
+            // Session time ran out while the student was away — auto-submit it now
+            if (isExpired(primary, exam)) {
+                return submitAttempt(primary.getId(), username);
+            }
             return buildAttemptResponse(primary, exam, false);
         }
 
@@ -78,6 +82,11 @@ public class AttemptService {
                 .orElseThrow(() -> new ResourceNotFoundException("Question", request.getQuestionId()));
         if (!question.getSection().getExam().getId().equals(attempt.getExam().getId())) {
             throw new BadRequestException("Question does not belong to this exam");
+        }
+
+        // Reject further saves once the session duration has elapsed
+        if (isExpired(attempt, attempt.getExam())) {
+            throw new BadRequestException("Test time has expired. The test has been auto-submitted.");
         }
 
         AttemptAnswer answer = answerRepository
@@ -198,6 +207,12 @@ public class AttemptService {
         if (exam.getEndTime() != null && exam.getEndTime().isBefore(now)) {
             throw new BadRequestException("Exam has already ended");
         }
+    }
+
+    private boolean isExpired(TestAttempt attempt, Exam exam) {
+        if (attempt.getStartTime() == null || exam.getDurationMinutes() == null) return false;
+        LocalDateTime deadline = attempt.getStartTime().plusMinutes(exam.getDurationMinutes());
+        return !LocalDateTime.now().isBefore(deadline);
     }
 
     private boolean evaluateAnswer(AttemptAnswer ans, Question q) {

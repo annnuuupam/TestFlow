@@ -1,143 +1,164 @@
-import { useEffect, useState } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useEffect, useState, useCallback } from 'react'
+import { useParams, useNavigate } from 'react-router-dom'
 import { leaderboardApi } from '@/api/leaderboard.api'
-import type { LeaderboardEntry } from '@/types'
-import { formatDuration, getInitials } from '@/utils'
-import { Trophy, Medal, ArrowLeft, Clock } from 'lucide-react'
+import { testApi } from '@/api/test.api'
+import type { Exam, LeaderboardEntry } from '@/types'
+import { Trophy, ArrowLeft, Globe2, FileText } from 'lucide-react'
 import { useAuthStore } from '@/store/useAuthStore'
-
-const rankColors: Record<number, string> = {
-  1: 'text-yellow-400 bg-yellow-400/15 border-yellow-400/30',
-  2: 'text-slate-300 bg-slate-300/15 border-slate-300/30',
-  3: 'text-amber-500 bg-amber-500/15 border-amber-500/30',
-}
+import Spinner from '@/components/ui/Spinner'
+import EmptyState from '@/components/ui/EmptyState'
+import LeaderboardPodium from '@/components/leaderboard/LeaderboardPodium'
+import LeaderboardTable from '@/components/leaderboard/LeaderboardTable'
+import { cn } from '@/utils'
 
 export default function StudentLeaderboard() {
   const { examId } = useParams<{ examId: string }>()
+  const navigate = useNavigate()
   const { username } = useAuthStore()
+
+  const examIdNum = Number(examId)
+  const isGlobal = examId === 'all'
+  const invalidExam = examId !== undefined && examId !== 'all' && !Number.isInteger(examIdNum)
+
   const [entries, setEntries] = useState<LeaderboardEntry[]>([])
   const [loading, setLoading] = useState(true)
+  const [exams, setExams] = useState<Exam[]>([])
+
+  const loadEntries = useCallback(() => {
+    setLoading(true)
+    if (invalidExam) {
+      setEntries([])
+      setLoading(false)
+      return
+    }
+    const req = isGlobal
+      ? leaderboardApi.getGlobal()
+      : leaderboardApi.getByExam(examIdNum)
+    req.then(setEntries).catch(() => setEntries([])).finally(() => setLoading(false))
+  }, [invalidExam, isGlobal, examIdNum])
+
+  useEffect(() => { loadEntries() }, [loadEntries])
 
   useEffect(() => {
-    setLoading(true);
-    if (examId === 'all') {
-      leaderboardApi.getGlobal()
-        .then(setEntries)
-        .finally(() => setLoading(false));
-    } else {
-      leaderboardApi.getByExam(Number(examId))
-        .then(setEntries)
-        .finally(() => setLoading(false));
-    }
-  }, [examId])
+    testApi.getActive().then(setExams).catch(() => setExams([]))
+  }, [])
+
+  const activeExamId = isGlobal || invalidExam ? undefined : examIdNum
+  const selectedExam = exams.find(e => e.id === activeExamId)
+
+  const switchToGlobal = () => navigate('/student/leaderboard/all', { replace: true })
+
+  const switchToExam = (id: number) => navigate(`/student/leaderboard/${id}`)
+
+  const goToExamTab = () => {
+    if (exams.length > 0) switchToExam(exams[0].id)
+  }
 
   const myEntry = entries.find(e => e.username === username)
-  const isGlobal = examId === 'all';
 
   return (
-    <div className="max-w-2xl mx-auto space-y-5">
+    <div className="max-w-3xl mx-auto space-y-6 animate-fade-in">
       <div className="page-header flex items-center gap-4">
-        <Link to={isGlobal ? "/student" : "/student/results"} className="text-muted-foreground hover:text-foreground transition-colors">
-          <ArrowLeft size={20} />
-        </Link>
+        <button
+          onClick={() => navigate(isGlobal ? '/student' : '/student/results')}
+          className="p-2 rounded-lg border border-border text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+        >
+          <ArrowLeft size={18} />
+        </button>
         <div>
           <h1 className="page-title flex items-center gap-2">
-            <Trophy size={22} className="text-yellow-400" /> {isGlobal ? 'Global Leaderboard' : 'Leaderboard'}
+            <Trophy size={20} className="text-amber-500" /> Leaderboard
           </h1>
-          <p className="page-subtitle">{isGlobal ? 'Top performers across the platform' : 'Top performers for this exam'}</p>
+          <p className="page-subtitle">
+            {isGlobal ? 'Top performers across the platform' : selectedExam ? selectedExam.title : 'Top performers for a test'}
+          </p>
         </div>
       </div>
 
-      {/* My rank card */}
-      {myEntry && (
-        <div className="glass-card p-4 border border-primary/30 bg-primary/5 flex items-center gap-4">
-          <div className="w-10 h-10 rounded-full bg-primary text-primary-foreground font-bold text-sm flex items-center justify-center">
-            #{myEntry.rank}
-          </div>
-          <div>
-            <p className="text-sm font-semibold">Your Rank: #{myEntry.rank} of {entries.length}</p>
-            <p className="text-xs text-muted-foreground">{myEntry.score}/{myEntry.totalMarks} · {myEntry.percentage.toFixed(1)}%</p>
-          </div>
+      {/* Mode tabs */}
+      <div className="inline-flex items-center gap-1 p-1 rounded-xl bg-secondary/70 border border-border">
+        <button
+          onClick={switchToGlobal}
+          className={cn(
+            'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all',
+            isGlobal ? 'bg-card text-foreground shadow-sm border border-border' : 'text-muted-foreground hover:text-foreground',
+          )}
+        >
+          <Globe2 size={15} /> Global
+        </button>
+        <button
+          onClick={goToExamTab}
+          className={cn(
+            'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all',
+            !isGlobal && !invalidExam ? 'bg-card text-foreground shadow-sm border border-border' : 'text-muted-foreground hover:text-foreground',
+          )}
+        >
+          <FileText size={15} /> By Exam
+        </button>
+      </div>
+
+      {/* Exam picker (By Exam mode) */}
+      {!isGlobal && (
+        <div className="flex items-center gap-3 bg-card border border-border rounded-xl px-4 py-3">
+          <FileText size={15} className="text-muted-foreground" />
+          <select
+            value={activeExamId?.toString() ?? ''}
+            onChange={e => switchToExam(Number(e.target.value))}
+            className="flex-1 bg-transparent text-sm font-medium text-foreground focus:outline-none cursor-pointer"
+          >
+            {exams.length === 0 && <option value="">No tests available</option>}
+            {exams.map(exam => (
+              <option key={exam.id} value={exam.id}>{exam.title}</option>
+            ))}
+          </select>
         </div>
       )}
 
-      {/* Podium (top 3) */}
-      {entries.length >= 3 && !loading && (
-        <div className="flex items-end justify-center gap-2 py-4">
-          {[entries[1], entries[0], entries[2]].map((e, i) => {
-            const heights = ['h-24', 'h-32', 'h-20']
-            const podiumRanks = [2, 1, 3]
-            return (
-              <div key={e.userId} className="flex flex-col items-center gap-2 flex-1">
-                <div className="w-12 h-12 rounded-full bg-secondary border-2 border-border flex items-center justify-center text-sm font-bold">
-                  {getInitials(e.fullName)}
-                </div>
-                <p className="text-xs font-medium text-center truncate w-full text-center">{e.fullName}</p>
-                <p className="text-xs text-muted-foreground">{e.percentage.toFixed(0)}%</p>
-                <div className={`w-full ${heights[i]} rounded-t-lg flex items-center justify-center text-xl font-bold ${
-                  podiumRanks[i] === 1 ? 'bg-yellow-500/20 border border-yellow-500/30' :
-                  podiumRanks[i] === 2 ? 'bg-slate-500/20 border border-slate-500/30' :
-                  'bg-amber-600/20 border border-amber-600/30'
-                }`}>
-                  {podiumRanks[i] === 1 ? '🥇' : podiumRanks[i] === 2 ? '🥈' : '🥉'}
-                </div>
-              </div>
-            )
-          })}
+      {invalidExam ? (
+        <EmptyState
+          icon={Trophy}
+          title="Invalid test"
+          description="The test you are looking for does not exist."
+          className="py-16"
+        />
+      ) : loading ? (
+        <div className="bg-card border border-border rounded-2xl py-14">
+          <Spinner label="Loading rankings…" />
         </div>
-      )}
-
-      {/* Full table */}
-      <div className="glass-card overflow-hidden">
-        <div className="px-5 py-3 border-b border-border bg-secondary/30">
-          <p className="text-sm font-semibold">All Rankings ({entries.length})</p>
-        </div>
-        <div className="divide-y divide-border">
-          {loading ? (
-            Array.from({length: 5}).map((_, i) => <div key={i} className="p-4 skeleton h-12 m-2 rounded" />)
-          ) : entries.length === 0 ? (
-            <div className="py-10 text-center text-sm text-muted-foreground">No submissions yet</div>
-          ) : entries.map(entry => (
-            <div key={entry.userId} className={`flex items-center gap-4 px-5 py-3.5 hover:bg-secondary/20 transition-colors ${
-              entry.username === username ? 'bg-primary/5' : ''
-            }`}>
-              {/* Rank */}
-              <div className={`w-8 h-8 rounded-full border flex items-center justify-center text-xs font-bold shrink-0 ${
-                rankColors[entry.rank] || 'bg-secondary border-border text-muted-foreground'
-              }`}>
-                {entry.rank <= 3
-                  ? entry.rank === 1 ? '🥇' : entry.rank === 2 ? '🥈' : '🥉'
-                  : entry.rank
-                }
+      ) : entries.length === 0 ? (
+        <EmptyState
+          icon={Trophy}
+          title="No results yet"
+          description={isGlobal
+            ? 'No submissions have been recorded yet. Complete your first test to appear here!'
+            : 'Be the first to take this test and set the benchmark!'}
+          className="py-16"
+        />
+      ) : (
+        <>
+          {myEntry && (
+            <div className="bg-primary/5 border border-primary/20 rounded-2xl p-4 flex items-center gap-4">
+              <div className="w-11 h-11 rounded-xl bg-primary/10 text-primary font-bold text-sm flex items-center justify-center border border-primary/20">
+                #{myEntry.rank}
               </div>
-
-              {/* Avatar */}
-              <div className="w-8 h-8 rounded-full bg-secondary text-xs font-bold flex items-center justify-center shrink-0">
-                {getInitials(entry.fullName)}
-              </div>
-
-              {/* Info */}
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">
-                  {entry.fullName}
-                  {entry.username === username && <span className="ml-2 text-xs text-primary">(You)</span>}
-                </p>
-                <p className="text-xs text-muted-foreground">@{entry.username}</p>
+                <p className="text-sm font-semibold text-foreground">Your Rank: #{myEntry.rank} of {entries.length}</p>
+                <p className="text-xs text-muted-foreground">{myEntry.score}/{myEntry.totalMarks} marks · {myEntry.percentage.toFixed(1)}%</p>
               </div>
-
-              {/* Score */}
-              <div className="text-right shrink-0">
-                <p className={`text-sm font-bold ${entry.passed ? 'text-emerald-400' : 'text-red-400'}`}>
-                  {entry.percentage.toFixed(1)}%
-                </p>
-                <p className="text-xs text-muted-foreground flex items-center gap-1 justify-end">
-                  <Clock size={10} /> {formatDuration(entry.timeTakenSeconds)}
+              <div className="text-right shrink-0 hidden sm:block">
+                <p className="text-xs text-muted-foreground">Percentile</p>
+                <p className="text-sm font-bold text-primary">
+                  {((1 - myEntry.rank / entries.length) * 100).toFixed(0)}th
                 </p>
               </div>
             </div>
-          ))}
-        </div>
-      </div>
+          )}
+
+          {entries.length >= 3 && <LeaderboardPodium entries={entries} />}
+
+          <LeaderboardTable entries={entries} currentUsername={username} showExam={isGlobal} />
+        </>
+      )}
     </div>
   )
 }

@@ -138,6 +138,7 @@ export interface LeaderboardEntry {
   percentage: number
   timeTakenSeconds: number
   passed: boolean
+  examTitle?: string
 }
 
 export interface ProfileResponse {

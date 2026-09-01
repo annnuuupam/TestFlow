@@ -33,18 +33,18 @@ public class ExamService {
 
     public Page<ExamResponse> getAllExams(String search, Pageable pageable) {
         return examRepository.searchExams(search, pageable)
-                .map(exam -> mapToResponse(exam, false));
+                .map(exam -> mapToResponse(exam, false, false));
     }
 
     public ExamResponse getExamById(Long id, boolean includeSections) {
         Exam exam = examRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Exam", id));
-        return mapToResponse(exam, includeSections);
+        return mapToResponse(exam, includeSections, true);
     }
 
     public List<ExamResponse> getActiveExams() {
         return examRepository.findCurrentlyActiveExams(LocalDateTime.now()).stream()
-                .map(exam -> mapToResponse(exam, false))
+                .map(exam -> mapToResponse(exam, false, false))
                 .collect(Collectors.toList());
     }
 
@@ -64,7 +64,7 @@ public class ExamService {
             throw new BadRequestException("Exam has already ended");
         }
 
-        return mapToResponse(exam, true);
+        return mapToResponse(exam, true, false);
     }
 
     @Transactional
@@ -85,11 +85,12 @@ public class ExamService {
                 .status(request.getStatus() != null ? request.getStatus() : TestStatus.DRAFT)
                 .isRandomized(request.getIsRandomized())
                 .maxAttempts(request.getMaxAttempts())
+                .category(request.getCategory())
                 .createdBy(creator)
                 .build();
 
         examRepository.save(exam);
-        return mapToResponse(exam, true);
+        return mapToResponse(exam, true, true);
     }
 
     @Transactional
@@ -100,7 +101,7 @@ public class ExamService {
         exam.setTitle(request.getTitle());
         exam.setDescription(request.getDescription());
         exam.setDurationMinutes(request.getDurationMinutes());
-        exam.setTotalMarks(request.getTotalMarks());
+        // total marks are recomputed from the section questions after saving
         exam.setPassingMarks(request.getPassingMarks());
         exam.setNegativeMarking(request.getNegativeMarking());
         exam.setNegativeMarksPerWrong(request.getNegativeMarksPerWrong());
@@ -109,9 +110,27 @@ public class ExamService {
         if (request.getStatus() != null) exam.setStatus(request.getStatus());
         exam.setIsRandomized(request.getIsRandomized());
         exam.setMaxAttempts(request.getMaxAttempts());
+        exam.setCategory(request.getCategory());
 
         examRepository.save(exam);
-        return mapToResponse(exam, true);
+        recalculateTotalMarks(exam.getId());
+        return mapToResponse(exam, true, true);
+    }
+
+    /**
+     * Keep the exam's total marks in sync with the actual sum of question marks
+     * across all its sections. Called after questions are added/edited/deleted/imported.
+     */
+    @Transactional
+    public void recalculateTotalMarks(Long examId) {
+        Exam exam = examRepository.findById(examId)
+                .orElseThrow(() -> new ResourceNotFoundException("Exam", examId));
+        int total = exam.getSections().stream()
+                .flatMap(s -> s.getQuestions().stream())
+                .mapToInt(q -> q.getMarks() != null ? q.getMarks() : 0)
+                .sum();
+        exam.setTotalMarks(total);
+        examRepository.save(exam);
     }
 
     @Transactional
@@ -134,7 +153,7 @@ public class ExamService {
         examRepository.deleteById(id);
     }
 
-    public ExamResponse mapToResponse(Exam exam, boolean includeSections) {
+    public ExamResponse mapToResponse(Exam exam, boolean includeSections, boolean includeAnswers) {
         long attemptCount = attemptRepository.countByExamId(exam.getId());
 
         List<SectionResponse> sections = new ArrayList<>();
@@ -148,7 +167,7 @@ public class ExamService {
 
             if (includeSections) {
                 List<QuestionResponse> questionResponses = questions.stream()
-                        .map(q -> mapQuestionToResponse(q, false))
+                        .map(q -> mapQuestionToResponse(q, includeAnswers))
                         .collect(Collectors.toList());
 
                 sections.add(SectionResponse.builder()
@@ -177,6 +196,7 @@ public class ExamService {
                 .status(exam.getStatus())
                 .isRandomized(exam.getIsRandomized())
                 .maxAttempts(exam.getMaxAttempts())
+                .category(exam.getCategory())
                 .createdBy(exam.getCreatedBy() != null ? exam.getCreatedBy().getUsername() : null)
                 .createdAt(exam.getCreatedAt())
                 .totalQuestions(totalQuestions)

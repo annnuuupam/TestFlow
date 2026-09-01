@@ -18,13 +18,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   useEffect(() => {
     const root = window.document.documentElement;
-    root.classList.remove('light', 'dark');
-    
-    // index.css uses .light for light mode, default is dark (slate-950)
-    if (theme === 'light') {
-      root.classList.add('light');
-    }
-    
+    root.classList.toggle('dark', theme === 'dark');
     localStorage.setItem('theme', theme);
   }, [theme]);
 

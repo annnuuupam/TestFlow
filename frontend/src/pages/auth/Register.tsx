@@ -8,6 +8,8 @@ import { Eye, EyeOff, UserPlus, Loader2 } from 'lucide-react'
 import { authApi } from '@/api/auth.api'
 import { useAuthStore } from '@/store/useAuthStore'
 import type { Role } from '@/types'
+import { Button } from '@/components/ui/Button'
+import Input from '@/components/ui/Input'
 
 const schema = z.object({
   username: z.string().min(3, 'Min 3 characters').max(50),
@@ -44,7 +46,7 @@ export default function Register() {
       })
       setAuth({ token: res.token, userId: res.userId, username: res.username,
                 fullName: res.fullName, email: res.email, role: res.role as Role })
-      toast.success('Account created! Welcome to TestFlow 🎉')
+      toast.success('Account created! Welcome to TestFlow')
       navigate('/student')
     } catch (err: any) {
       toast.error(err.response?.data?.message || 'Registration failed')
@@ -54,69 +56,86 @@ export default function Register() {
   }
 
   return (
-    <div className="glass-card p-8 shadow-2xl">
-      <h2 className="text-xl font-bold mb-1">Create account</h2>
-      <p className="text-sm text-muted-foreground mb-6">Join TestFlow and start your learning journey</p>
+    <div className="rounded-2xl border border-border bg-card p-8 shadow-soft">
+      <div className="mb-8">
+        <h2 className="text-2xl font-extrabold tracking-tight text-foreground">Create account</h2>
+        <p className="text-sm text-muted-foreground mt-1.5">Join TestFlow and start your learning journey</p>
+      </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-sm font-medium mb-1.5">Username</label>
-              <input {...register('username')} placeholder="john_doe" autoComplete="username"
-                className="w-full px-3 py-2 rounded-lg bg-secondary border border-border text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all" />
-              {errors.username && <p className="text-destructive text-xs mt-1">{errors.username.message}</p>}
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1.5">Full Name</label>
-              <input {...register('fullName')} placeholder="John Doe" autoComplete="name"
-                className="w-full px-3 py-2 rounded-lg bg-secondary border border-border text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all" />
-              {errors.fullName && <p className="text-destructive text-xs mt-1">{errors.fullName.message}</p>}
-            </div>
-          </div>
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <Input
+            label="Username"
+            placeholder="john_doe"
+            autoComplete="username"
+            error={errors.username?.message}
+            {...register('username')}
+          />
+          <Input
+            label="Full Name"
+            placeholder="John Doe"
+            autoComplete="name"
+            error={errors.fullName?.message}
+            {...register('fullName')}
+          />
+        </div>
 
-          <div>
-            <label className="block text-sm font-medium mb-1.5">Email</label>
-            <input {...register('email')} type="email" placeholder="john@example.com" autoComplete="email"
-              className="w-full px-3 py-2 rounded-lg bg-secondary border border-border text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all" />
-            {errors.email && <p className="text-destructive text-xs mt-1">{errors.email.message}</p>}
-          </div>
+        <Input
+          label="Email"
+          type="email"
+          placeholder="john@example.com"
+          autoComplete="email"
+          error={errors.email?.message}
+          {...register('email')}
+        />
 
-          <div>
-            <label className="block text-sm font-medium mb-1.5">Phone (optional)</label>
-            <input {...register('phone')} placeholder="+91 9999999999" autoComplete="tel"
-              className="w-full px-3 py-2 rounded-lg bg-secondary border border-border text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all" />
-          </div>
+        <Input
+          label="Phone (optional)"
+          placeholder="+91 9999999999"
+          autoComplete="tel"
+          {...register('phone')}
+        />
 
-          <div>
-            <label className="block text-sm font-medium mb-1.5">Password</label>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="space-y-1.5">
+            <label className="block text-xs font-semibold uppercase tracking-wide text-muted-foreground">Password</label>
             <div className="relative">
-              <input {...register('password')} type={showPassword ? 'text' : 'password'} placeholder="min. 6 characters" autoComplete="new-password"
-                className="w-full px-3 py-2 rounded-lg bg-secondary border border-border text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all pr-10" />
-              <button type="button" onClick={() => setShowPassword(!showPassword)}
+              <input
+                {...register('password')}
+                type={showPassword ? 'text' : 'password'}
+                autoComplete="new-password"
+                placeholder="min. 6 characters"
+                className={`w-full rounded-xl border border-input bg-background px-3.5 py-2.5 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/25 focus:border-primary transition-all pr-10 ${
+                  errors.password ? 'border-red-500/60 focus:ring-red-500/25 focus:border-red-500' : ''
+                }`}
+              />
+              <button type="button" onClick={() => setShowPassword(s => !s)}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors">
-                {showPassword ? <EyeOff size={15}/> : <Eye size={15}/>}
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
             </div>
-            {errors.password && <p className="text-destructive text-xs mt-1">{errors.password.message}</p>}
+            {errors.password && <p className="text-xs font-medium text-red-500">{errors.password.message}</p>}
           </div>
 
-          <div>
-            <label className="block text-sm font-medium mb-1.5">Confirm Password</label>
-            <input {...register('confirmPassword')} type="password" placeholder="repeat password" autoComplete="new-password"
-              className="w-full px-3 py-2 rounded-lg bg-secondary border border-border text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all" />
-            {errors.confirmPassword && <p className="text-destructive text-xs mt-1">{errors.confirmPassword.message}</p>}
-          </div>
+          <Input
+            label="Confirm Password"
+            type="password"
+            placeholder="repeat password"
+            autoComplete="new-password"
+            error={errors.confirmPassword?.message}
+            {...register('confirmPassword')}
+          />
+        </div>
 
-        <button type="submit" disabled={loading}
-          className="w-full py-2.5 rounded-lg bg-primary text-primary-foreground font-semibold text-sm hover:bg-primary/90 transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed shadow-lg shadow-primary/20 mt-2">
-          {loading ? <Loader2 size={16} className="animate-spin" /> : <UserPlus size={16} />}
+        <Button type="submit" loading={loading} className="w-full" size="lg">
+          {!loading && <UserPlus size={16} />}
           {loading ? 'Creating account…' : 'Create account'}
-        </button>
+        </Button>
       </form>
 
-      <p className="text-center text-sm text-muted-foreground mt-5">
+      <p className="text-center text-sm text-muted-foreground mt-6">
         Already have an account?{' '}
-        <Link to="/login" className="text-primary hover:underline font-medium">Sign in</Link>
+        <Link to="/login" className="text-primary hover:underline font-semibold">Sign in</Link>
       </p>
     </div>
   )

@@ -26,6 +26,15 @@ export const adminApi = {
   deleteQuestion: (id: number) =>
     api.delete(`/admin/questions/${id}`),
 
+  getBankQuestions: () =>
+    api.get('/admin/questions/question-bank').then(r => r.data),
+
+  getBankQuestion: (id: number) =>
+    api.get(`/admin/questions/question-bank/${id}`).then(r => r.data),
+
+  importToSection: (data: { sectionId: number; questionIds: number[]; marks?: number }) =>
+    api.post('/admin/questions/import-to-section', data).then(r => r.data),
+
   bulkImportQuestions: (file: File) => {
     const form = new FormData()
     form.append('file', file)

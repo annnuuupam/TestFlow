@@ -27,54 +27,47 @@ const BadgeGallery: React.FC<BadgeGalleryProps> = ({ badges }) => {
   };
 
   return (
-    <div className="flex flex-col space-y-4">
-      <style>{`
-        @keyframes scaleIn {
-          from { opacity: 0; transform: translateY(20px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        .badge-card {
-          animation: scaleIn 0.4s ease-out forwards;
-        }
-      `}</style>
-      
-      <h3 className="text-lg font-semibold text-slate-100 flex items-center gap-2">
-        <Award className="w-5 h-5 text-indigo-400" />
+    <div className="flex flex-col space-y-4 animate-fade-in">
+      <h3 className="text-base font-bold text-foreground flex items-center gap-2">
+        <span className="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center">
+          <Award className="w-4 h-4 text-primary" />
+        </span>
         Achievements & Badges
       </h3>
       
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-2 gap-4">
         {badges.map((badge, idx) => (
           <div
             key={badge.id}
             style={{ animationDelay: `${idx * 100}ms` }}
-            className={`badge-card relative group p-4 rounded-2xl border transition-all duration-500 overflow-hidden ${
+            className={`animate-fade-in relative rounded-2xl border p-4 transition-all duration-300 ${
               badge.isEarned 
-                ? 'bg-slate-900/60 border-indigo-500/30' 
-                : 'bg-slate-950/40 border-slate-800/40 grayscale opacity-40'
+                ? 'bg-primary/5 border-primary/25 hover:border-primary/40 hover-lift' 
+                : 'bg-muted/40 border-border grayscale opacity-50'
             }`}
           >
-            {badge.isEarned && (
-              <div className="absolute -inset-1 bg-gradient-to-tr from-indigo-500/20 to-purple-500/20 blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-            )}
-
-            <div className="relative flex flex-col items-center text-center space-y-3">
-              <div className={`p-3 rounded-xl shadow-lg border transition-transform duration-500 group-hover:scale-110 ${
+            <div className="flex flex-col items-center text-center space-y-3">
+              <div className={`p-3 rounded-xl border transition-transform duration-300 ${
                 badge.isEarned 
-                  ? 'bg-indigo-500/10 border-indigo-500/20 text-indigo-400' 
-                  : 'bg-slate-800/20 border-slate-700/20 text-slate-600'
+                  ? 'bg-primary/10 border-primary/25 text-primary shadow-sm' 
+                  : 'bg-muted border-border text-muted-foreground'
               }`}>
                 {getIcon(badge.name)}
               </div>
               
               <div className="space-y-1">
-                <h4 className="text-sm font-bold text-slate-100">{badge.name}</h4>
-                <p className="text-[10px] text-slate-400 leading-tight line-clamp-2">{badge.description}</p>
+                <h4 className="text-sm font-bold text-foreground">{badge.name}</h4>
+                <p className="text-[10px] text-muted-foreground leading-tight line-clamp-2">{badge.description}</p>
               </div>
 
               {badge.isEarned && badge.awardedAt && (
-                <div className="text-[9px] font-mono text-indigo-400/60 uppercase">
+                <div className="text-[9px] font-mono text-primary/70 uppercase">
                   Earned {new Date(badge.awardedAt).toLocaleDateString()}
+                </div>
+              )}
+              {!badge.isEarned && (
+                <div className="text-[9px] font-mono text-muted-foreground/70 uppercase">
+                  Locked
                 </div>
               )}
             </div>

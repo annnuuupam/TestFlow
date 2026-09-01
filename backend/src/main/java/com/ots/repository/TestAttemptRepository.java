@@ -25,12 +25,15 @@ public interface TestAttemptRepository extends JpaRepository<TestAttempt, Long> 
     Page<TestAttempt> findByUserId(Long userId, Pageable pageable);
 
     @Query("SELECT ta FROM TestAttempt ta WHERE ta.exam.id = :examId " +
-           "AND ta.status = 'SUBMITTED' ORDER BY ta.score DESC")
+           "AND ta.status = 'SUBMITTED' ORDER BY ta.score DESC, ta.timeTakenSeconds ASC")
     List<TestAttempt> findLeaderboardByExam(@Param("examId") Long examId);
 
-    @Query("SELECT ta FROM TestAttempt ta WHERE ta.status = 'SUBMITTED' ORDER BY ta.score DESC")
+    @Query("SELECT ta FROM TestAttempt ta WHERE ta.status = 'SUBMITTED' " +
+           "ORDER BY ta.percentage DESC, ta.score DESC, ta.timeTakenSeconds ASC")
     List<TestAttempt> findGlobalLeaderboard();
 
     @Query("SELECT COUNT(DISTINCT ta.exam.id) FROM TestAttempt ta WHERE ta.user.id = :userId AND ta.status = 'SUBMITTED'")
     long countCompletedExamsByUser(@Param("userId") Long userId);
+
+    void deleteByUserId(Long userId);
 }

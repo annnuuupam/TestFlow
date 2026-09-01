@@ -2,11 +2,13 @@ import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { X, User, FileText, Tag, Loader2 } from 'lucide-react';
+import { User, Loader2 } from 'lucide-react';
 import { ProfileResponse } from '@/types';
 import { profileApi } from '@/api/profile.api';
 import { toast } from 'react-hot-toast';
-import { cn } from '@/utils';
+import Modal from '@/components/ui/Modal';
+import Input from '@/components/ui/Input';
+import Button from '@/components/ui/Button';
 
 const profileSchema = z.object({
   fullName: z.string().min(2, 'Name must be at least 2 characters'),
@@ -43,8 +45,6 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onClose, pr
     },
   });
 
-  if (!isOpen) return null;
-
   const onSubmit = async (data: any) => {
     try {
       await profileApi.updateProfile(data);
@@ -57,110 +57,79 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onClose, pr
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-300">
-      <div className="bg-card border border-border w-full max-w-lg rounded-[2rem] shadow-2xl overflow-hidden relative animate-in zoom-in-95 duration-300">
-        
-        {/* Header */}
-        <div className="p-6 border-b border-border flex items-center justify-between bg-secondary/30">
-          <h2 className="text-xl font-black tracking-tight text-foreground flex items-center gap-2">
-            <User className="w-5 h-5 text-primary" />
-            Edit Profile
-          </h2>
-          <button 
-            onClick={onClose}
-            className="p-2 hover:bg-foreground/10 rounded-xl transition-colors text-muted-foreground"
-          >
-            <X className="w-5 h-5" />
-          </button>
+    <Modal
+      open={isOpen}
+      onClose={onClose}
+      title={
+        <span className="flex items-center gap-2">
+          <span className="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center">
+            <User className="w-4 h-4 text-primary" />
+          </span>
+          Edit Profile
+        </span>
+      }
+      footer={
+        <>
+          <Button type="button" variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button type="submit" form="edit-profile-form" disabled={isSubmitting}>
+            {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+            Save Changes
+          </Button>
+        </>
+      }
+    >
+      <form id="edit-profile-form" onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+        <Input
+          label="Full Name"
+          placeholder="Your name"
+          error={errors.fullName?.message as string}
+          {...register('fullName')}
+        />
+
+        <div className="space-y-1.5">
+          <label className="block text-xs font-semibold uppercase tracking-wide text-muted-foreground">Professional Bio</label>
+          <textarea
+            {...register('bio')}
+            rows={2}
+            placeholder="A short bio about yourself"
+            className="input resize-none"
+          />
+          {errors.bio && <p className="text-xs font-medium text-red-500">{errors.bio.message as string}</p>}
         </div>
 
-        {/* Form Body */}
-        <form onSubmit={handleSubmit(onSubmit)} className="p-8 space-y-5 max-h-[70vh] overflow-y-auto">
-          
-          <div className="space-y-1">
-            <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Full Name</label>
-            <input 
-              {...register('fullName')}
-              className={cn(
-                "w-full bg-secondary/50 border border-border focus:border-primary/50 rounded-xl px-4 py-2.5 outline-none transition-all duration-300",
-                errors.fullName && "border-red-500/50"
-              )}
-            />
-            {errors.fullName && <p className="text-[9px] font-bold text-red-500 uppercase">{errors.fullName.message as string}</p>}
-          </div>
+        <Input
+          label="Skills (comma separated)"
+          placeholder="Java, React, Algorithms"
+          error={errors.skills?.message as string}
+          {...register('skills')}
+        />
 
-          <div className="space-y-1">
-            <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Professional Bio</label>
-            <textarea 
-              {...register('bio')}
-              rows={2}
-              className={cn(
-                "w-full bg-secondary/50 border border-border focus:border-primary/50 rounded-xl px-4 py-2.5 outline-none transition-all duration-300 resize-none",
-                errors.bio && "border-red-500/50"
-              )}
-            />
-          </div>
+        <div className="grid grid-cols-1 gap-4 pt-2">
+          <Input
+            label="GitHub URL"
+            placeholder="https://github.com/..."
+            error={errors.githubUrl?.message as string}
+            {...register('githubUrl')}
+          />
 
-          <div className="space-y-1">
-            <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Skills (comma separated)</label>
-            <input 
-              {...register('skills')}
-              className="w-full bg-secondary/50 border border-border focus:border-primary/50 rounded-xl px-4 py-2.5 outline-none transition-all duration-300"
-            />
-          </div>
+          <Input
+            label="LinkedIn URL"
+            placeholder="https://linkedin.com/in/..."
+            error={errors.linkedinUrl?.message as string}
+            {...register('linkedinUrl')}
+          />
 
-          <div className="grid grid-cols-1 gap-4 pt-2">
-            <div className="space-y-1">
-              <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">GitHub URL</label>
-              <input 
-                {...register('githubUrl')}
-                placeholder="https://github.com/..."
-                className="w-full bg-secondary/50 border border-border focus:border-primary/50 rounded-xl px-4 py-2.5 outline-none transition-all duration-300 text-sm"
-              />
-              {errors.githubUrl && <p className="text-[9px] font-bold text-red-500 uppercase">{errors.githubUrl.message as string}</p>}
-            </div>
-
-            <div className="space-y-1">
-              <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">LinkedIn URL</label>
-              <input 
-                {...register('linkedinUrl')}
-                placeholder="https://linkedin.com/in/..."
-                className="w-full bg-secondary/50 border border-border focus:border-primary/50 rounded-xl px-4 py-2.5 outline-none transition-all duration-300 text-sm"
-              />
-              {errors.linkedinUrl && <p className="text-[9px] font-bold text-red-500 uppercase">{errors.linkedinUrl.message as string}</p>}
-            </div>
-
-            <div className="space-y-1">
-              <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Twitter URL</label>
-              <input 
-                {...register('twitterUrl')}
-                placeholder="https://twitter.com/..."
-                className="w-full bg-secondary/50 border border-border focus:border-primary/50 rounded-xl px-4 py-2.5 outline-none transition-all duration-300 text-sm"
-              />
-              {errors.twitterUrl && <p className="text-[9px] font-bold text-red-500 uppercase">{errors.twitterUrl.message as string}</p>}
-            </div>
-          </div>
-
-          {/* Actions */}
-          <div className="flex gap-4 pt-4 sticky bottom-0 bg-card py-2">
-            <button 
-              type="button"
-              onClick={onClose}
-              className="flex-1 px-6 py-3 bg-secondary hover:bg-secondary/80 text-foreground font-bold rounded-2xl border border-border transition-all"
-            >
-              Cancel
-            </button>
-            <button 
-              type="submit"
-              disabled={isSubmitting}
-              className="flex-1 px-6 py-3 bg-primary hover:bg-primary/90 text-white font-black rounded-2xl shadow-xl shadow-primary/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save Changes'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+          <Input
+            label="Twitter URL"
+            placeholder="https://twitter.com/..."
+            error={errors.twitterUrl?.message as string}
+            {...register('twitterUrl')}
+          />
+        </div>
+      </form>
+    </Modal>
   );
 };
 

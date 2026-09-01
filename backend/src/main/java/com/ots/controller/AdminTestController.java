@@ -109,10 +109,13 @@ public class AdminTestController {
     @DeleteMapping("/sections/{sectionId}")
     @Operation(summary = "Delete a section (and all its questions)")
     public ResponseEntity<Void> deleteSection(@PathVariable Long sectionId) {
-        if (!sectionRepository.existsById(sectionId)) {
-            throw new ResourceNotFoundException("Section", sectionId);
-        }
+        Section section = sectionRepository.findById(sectionId)
+                .orElseThrow(() -> new ResourceNotFoundException("Section", sectionId));
+        Long examId = section.getExam().getId();
         sectionRepository.deleteById(sectionId);
+        // flush the removal before recalculating so the cascading merge never sees the deleted section
+        sectionRepository.flush();
+        examService.recalculateTotalMarks(examId);
         return ResponseEntity.noContent().build();
     }
 }

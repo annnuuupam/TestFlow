@@ -9,6 +9,7 @@ import java.util.List;
 @Repository
 public interface QuestionRepository extends JpaRepository<Question, Long> {
     List<Question> findBySectionIdOrderByDisplayOrder(Long sectionId);
+    List<Question> findBySectionIsNullOrderByIdDesc();
     long countBySectionId(Long sectionId);
     void deleteBySectionId(Long sectionId);
 }

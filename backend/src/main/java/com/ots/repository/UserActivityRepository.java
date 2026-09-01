@@ -12,4 +12,6 @@ public interface UserActivityRepository extends JpaRepository<UserActivity, Long
 
     @Query("SELECT ua FROM UserActivity ua WHERE ua.user.id = :userId AND ua.activityDate >= :startDate")
     List<UserActivity> findRecentActivity(Long userId, LocalDate startDate);
+
+    void deleteByUserId(Long userId);
 }
