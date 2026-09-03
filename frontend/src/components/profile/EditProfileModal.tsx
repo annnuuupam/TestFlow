@@ -9,6 +9,7 @@ import { toast } from 'react-hot-toast';
 import Modal from '@/components/ui/Modal';
 import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
+import { useAuthStore } from '@/store/useAuthStore';
 
 const profileSchema = z.object({
   fullName: z.string().min(2, 'Name must be at least 2 characters'),
@@ -29,6 +30,7 @@ interface EditProfileModalProps {
 }
 
 const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onClose, profile, onSuccess }) => {
+  const updateFullName = useAuthStore(s => s.updateFullName);
   const {
     register,
     handleSubmit,
@@ -48,6 +50,7 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onClose, pr
   const onSubmit = async (data: any) => {
     try {
       await profileApi.updateProfile(data);
+      updateFullName(data.fullName);
       toast.success('Profile updated successfully');
       onSuccess();
       onClose();

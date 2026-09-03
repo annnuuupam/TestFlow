@@ -89,6 +89,10 @@ public class ProfileController {
         User user = userRepository.findByUsername(principal.getName()).orElseThrow();
         UserProfile profile = engagementService.getOrCreateProfile(user.getId());
         
+        if (updates.containsKey("fullName")) {
+            user.setFullName((String) updates.get("fullName"));
+            userRepository.save(user);
+        }
         if (updates.containsKey("bio")) profile.setBio((String) updates.get("bio"));
         if (updates.containsKey("profilePicture")) profile.setProfilePicture((String) updates.get("profilePicture"));
         if (updates.containsKey("githubUrl")) profile.setGithubUrl((String) updates.get("githubUrl"));

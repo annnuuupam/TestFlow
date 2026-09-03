@@ -19,6 +19,7 @@ interface AuthState {
     email: string
     role: Role
   }) => void
+  updateFullName: (name: string) => void
   logout: () => void
 }
 
@@ -41,6 +42,10 @@ export const useAuthStore = create<AuthState>()(
         email: data.email,
         role: data.role,
         isAuthenticated: true,
+      }),
+
+      updateFullName: (name) => set({
+        fullName: name,
       }),
 
       logout: () => set({
