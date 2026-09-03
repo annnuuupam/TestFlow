@@ -1,0 +1,49 @@
+# ─── Java / Maven ───────────────────────────────────────────
+target/
+*.class
+*.jar
+*.war
+*.ear
+*.nar
+*.zip
+*.tar.gz
+*.rar
+
+# Maven wrapper
+!.mvn/wrapper/maven-wrapper.jar
+
+# Spring Boot
+spring.log
+*.log
+
+# ─── Node / Frontend ────────────────────────────────────────
+node_modules/
+frontend/dist/
+frontend/build/
+frontend/.vite/
+.pnp
+.pnp.js
+
+# ─── Environment / Secrets ──────────────────────────────────
+.env
+.env.*
+!.env.example
+
+# ─── IDEs ───────────────────────────────────────────────────
+.idea/
+*.iml
+.vscode/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# ─── OS ─────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ─── Misc ───────────────────────────────────────────────────
+*.swp
+*.bak
+*.tmp
